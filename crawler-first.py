@@ -5,6 +5,7 @@ import time
 import csv
 
 
+# Setting headers to hide the identity that we are crawler program, it can avoid block by web server.
 def get_header():
     user_agent = [
         'Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.71 Safari/537.36',
@@ -18,6 +19,7 @@ def get_header():
 
 weatherfile = 'The path where save data you crawled'
 
+# Our data's headers
 fields = ['Time', 'Weather', 'Temperature', 'Wind', 'Barometer', 'Wind Direction', 'Humidity', 'Visibility']
 
 f = open(weatherfile, 'a+', newline='')
@@ -26,34 +28,31 @@ file.writerow(fields)
 
 
 for year in range(2013, 2014):
-
     for month in range(1, 13):
-
-
         urlhead = 'https://www.timeanddate.com/weather/usa/new-york/historic?month='
         urlmid = '&year='
         url = urlhead + str(month) + urlmid + str(year)
 
         print(url)
 
-        # 下載這個網頁的內容  # 抓取這個網頁的原始碼
+        # Download content of the web and get the source code of the web
         html = requests.get(url, headers=get_header())
 
-        # 確認是否下載成功
+        # Make sure we download success or not
         if html.status_code == requests.codes.ok:
 
-            # 以 BeautifulSoup 解析 HTML 程式碼
+            # Parse HTML code with BeautifulSoup
             soup = BeautifulSoup(html.text, 'html.parser')
 
-            # 以 CSS 的 class 抓出我們所需要的資料
+            # Get the data we want by CSS syntax
             tableRow = soup.select('#wt-his > tbody > tr')
-            #print(table)
+            #print(tableRow)
+
             for row in tableRow:
 
                 Time = row.select_one('th').text
                 #time = row.select('th')[0].text
 
-                # 天氣狀況時間
                 #    print('Time : ', Time)
                 #hit = th[0].text
                 # print(Time)
@@ -74,29 +73,27 @@ for year in range(2013, 2014):
 
                 Bar = row.select('.sep')[1]
                 Humidity = Bar.find_previous_siblings('td')[0].text
-                #    print('Humidity : ', Humidity)
+                # print('Humidity : ', Humidity)
 
                 Bar = row.select('.sep')[1]
                 Visibility = Bar.find_next_siblings('td')[0].text
-                #    print('Visibility : ', Visibility)
+                # print('Visibility : ', Visibility)
 
-                #    print('========================================')
+                # print('========================================')
 
+                # We may get some impurity we don't need in data, so we have to remove it.
                 Temp1 = "".join(Temp.split())
                 Visibility1 = "".join(Visibility.split())
                 # nws = [time, weather, Temp1, wind, Barometer, wind_dir, Humidity, Visibility1]
                 # print(nws)
 
-                # f = open(weatherfile, 'a+', newline='')
-                # file = csv.writer(f)
-                # file.writerow(fields)
                 file.writerow([Time, weather, Temp1, wind, Barometer, wind_dir, Humidity, Visibility1])
 
-        # time.sleep(random.random())
+        # Feign we are human to browse the web to avoid be blocked by web server, and in other hand, decrease stress on
+        # server, we are good crawler program.
         time.sleep(random.randint(5, 12))
 
-
-
+# Remember close the file you opened, release your memory space, it's easily to forget.
 f.close()
 
 print('finish')
