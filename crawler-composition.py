@@ -10,6 +10,7 @@ import csv
 class Fake_Identity:
     def get_header(self):
         user_agent = [
+            'Here put some available user agent, below are some example from internet.'
             'Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.71 Safari/537.36',
             'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.11 (KHTML, like Gecko) Chrome/23.0.1271.64 Safari/537.11',
             'Mozilla/5.0 (Windows NT 5.1; U; en; rv:1.8.1) Gecko/20061208 Firefox/2.0.0 Opera 9.50',
@@ -22,15 +23,17 @@ class Fake_Identity:
 
 
     def get_proxy(self):
-        proxy = ['217.61.125.74:3128',
-                 '118.178.93.238:8888',
-                 '212.237.15.108:8080',
-                 '206.189.220.129:8080',
-                 '114.202.2.185:80',
-                 '206.189.222.146:8080'
+        proxy = [
+            'Here put some available proxy ip, below are some example from internet, now it is unusable I think.'
+            '217.61.125.74:3128',
+            '118.178.93.238:8888',
+            '212.237.15.108:8080',
+            '206.189.220.129:8080',
+            '114.202.2.185:80',
+            '206.189.222.146:8080'
                  ]
         proxies = {
-            'http': 'http://' + random.choice(proxy),
+            'http': 'http://' + random.choice(proxy)
             # Hyper Text Transfer Protocol (HTTP) cannot use carelessly, to remember, HTTP and HTTPS look similar but
             # they are different at all. Here, we have to pay attention to sure your proxy is HTTP or HTTPS. If you want
             # to study more information about http and https, please google.
@@ -100,11 +103,11 @@ if __name__ == '__main__':
     urlmid = '&month='
     urltail = '&year='
 
-    year_start = 2013
+    year_start = 2013    # You can change it to the year you want to crawl.
     year_end = 2014
-    month_start = 1
+    month_start = 1      # It's the same with year, you can change it to the month you want.
     month_end = 13
-    day_start = 1
+    day_start = 1        # Just change too, if you want.
     day_end = 32
 
     for year in range(year_start, year_end):
