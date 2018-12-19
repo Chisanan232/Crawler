@@ -39,5 +39,6 @@ try:
     print('success !')
 except OSError as e:
     print('OSError : ', e)
-except:
-    print('fuck you error')
+except BaseException as e:
+    print('Error : Oh no, it\'s fail.......')
+    print('\nYour error: ', e)

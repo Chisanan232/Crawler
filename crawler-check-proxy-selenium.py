@@ -81,8 +81,8 @@ try:
 except OSError as e:
     print('OSError : ', e)
 except BaseException as e:
-    print('fuck you error.\n')
-    print(e)
+    print('Error : Oh no, it\'s fail.......')
+    print('\nYour error: ', e)
 
 driver.quit()
 print('------------------------')
