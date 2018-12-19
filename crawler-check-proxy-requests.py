@@ -23,7 +23,6 @@ This method be used if you have some amount of proxies    - line 22 to 30
 '''
 # proxy = '5.39.48.34:443'
 # proxy = '192.168.31.7:8080'      # Just write a proxy ip in random, test the program can check or not.
-#
 # proxies = {
 #     # 'http':'http://' + random.choice(proxy),
 #     # # 'https':'https://' + random.choice(proxy)

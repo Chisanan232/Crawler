@@ -39,7 +39,7 @@ proxy_handler = ProxyHandler({
 opener = build_opener(proxy_handler)
 try:
     # Setting user agent and send requests to target web.
-    request = Request('http://httpbin.org/get', headers=header)
+    request = Request('http://httpbin.org/get', headers=get_header())
     # Open target web and setting proxy ip
     response = opener.open(request)
     print(response.read().decode('utf-8'))
