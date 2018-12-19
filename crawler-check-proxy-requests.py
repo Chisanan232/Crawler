@@ -63,4 +63,3 @@ except requests.exceptions.ConnectionError as e:
 except BaseException as e:
     print('Error : Oh no, it\'s fail.......')
     print('\nYour error: ', e)
-

@@ -2,7 +2,7 @@
 Check proxy ip - selenium version
 The program's target is check the proxy is available or not. Because I get proxy for free in web, it maybe cannot use to
 crawl.
-****Addition****
+*****Addition*****
 In my experience of crawl, if you use selenium package, it is very keen, I mean may be the proxy is available when you
 use in like requests or pyquery packages, something else, BUT, in selenium it is not operate. I think the reason why it
 happened is I use free proxy from some web so it is not stable.

@@ -19,6 +19,7 @@ def get_header():
     headers = {'User-Agent': random.choice(user_agent)}
     return headers
 
+
 def get_proxy():
     proxy = [
         #'219.76.152.80:80',
