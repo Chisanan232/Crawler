@@ -78,9 +78,13 @@ class File(DefineParameter):
 
     def open_file(self, date):
         if not os.path.exists(self.path + str(date)[:4] + '/'):
-            os.makedirs(self.path + str(date)[:4] + '/')
-            print(self.path + str(date)[:4] + '/')
-            print('Build folder success !!!')
+            try:
+                os.makedirs(self.path + str(date)[:4] + '/')
+                print(self.path + str(date)[:4] + '/')
+                print('Build folder success !!!')
+            except BaseException as e:
+                print('Error: ', e)
+                print('If this error about file or direction exist so cannot build, then we don\'t care it.')
         else:
             print('File exists already.')
             pass
@@ -90,18 +94,21 @@ class File(DefineParameter):
         return csv_file, write_file
 
 
-'''After crawled, merge all of data we crawl to a csv file'''
 class MergeData(DefineParameter):
-    def __init__(self, save_path, year_initial, year_conclude, address, save_file_dir):
+    def __init__(self, save_path, year_initial, year_conclude, address, save_file_dir, save_path_file_name):
         super(MergeData, self).__init__(save_path=save_path, year_initial=year_initial, year_conclude=year_conclude)
         self.address = address
         self.save_file_dir = save_file_dir
+        self.save_path_file_name = save_path_file_name
 
 
     def merge(self):
-        '''Merge all of our data file to a csv file'''
-        target_path = 'D:/DataSource/Python/test/bdse08-02-weather-data/weather-' + crawl_address + '-true-fin-module-asyncio/'
-        weather_year = [pd.DataFrame(pd.read_csv(os.path.join(target_path, data_folder, file))) for data_folder in os.listdir(target_path) for file in os.listdir(os.path.join(target_path, data_folder))]
+        new_path_dir_str = '/'
+        path_str_list = self.path.split(sep='/')
+        path_str_list.remove(path_str_list[-1])
+        new_path_dir = new_path_dir_str.join(path_str_list)
+        weather_year = [pd.DataFrame(pd.read_csv(os.path.join(new_path_dir, data_folder, file))) for data_folder in
+                        os.listdir(new_path_dir) for file in os.listdir(os.path.join(new_path_dir, data_folder))]
         '''No. 1 method'''
         # new_weather_year = []
         # for weather_data in weather_year:
@@ -109,12 +116,12 @@ class MergeData(DefineParameter):
         #     new_weather = pd.concat([weather_group.get_group(date) for date in sorted(set(weather_data['Date']))], axis=0, ignore_index=True)
         #     new_weather_year.append(new_weather)
         '''No. 2 method'''
-        new_weather_year = [pd.concat([weather_data.groupby('Date').get_group(date) for date in sorted(set(weather_data['Date']))], axis=0, ignore_index=True) for weather_data in weather_year]
+        new_weather_year = [pd.concat([weather_data.groupby('Date').get_group(date) for date in
+                                       sorted(set(weather_data['Date']))], axis=0, ignore_index=True)
+                            for weather_data in weather_year]
         weather_data = pd.concat(new_weather_year, axis=0, ignore_index=True)
 
-        '''The data file save where it is'''
-        save_path_tail = '-weather-data-module-asyncio.csv'
-        save_path = self.save_file_dir + str(self.address) + save_path_tail
+        save_path = self.save_file_dir + str(self.address) + self.save_path_file_name
         pd.DataFrame(weather_data).to_csv(save_path, encoding='utf-8-sig', index=False)
         print('------Data has been merged finish !-------')
 
@@ -126,29 +133,12 @@ class All_Url_In_Worker(DefineParameter):
 
 
     def get_url(self, year_start, year_end, month_start, month_end, day_start, day_end):
-        '''Collect all of urls that we want to crawl data'''
         url_address = self.address
         url_head = 'https://www.timeanddate.com/scripts/cityajax.php?n=usa/'
         url_mid = '&mode=historic&hd='
         url_mid_two = '&month='
         url_tail = '&year='
 
-        '''A method save variable we need with for loop'''
-        # url_pool = []
-        # date_list = []
-        # for year in range(year_start, year_end):
-        #     for month in range(month_start, month_end):
-        #         m = '%02d' % month
-        #         for day in range(day_start, day_end):
-        #             d = '%02d' % day
-        #             url = url_head + url_address + url_mid + str(year) + m.zfill(2) + d.zfill(2) + \
-        #                   url_mid_two + str(month) + url_tail + str(year)
-        #             url_pool.append(url)
-        #             # date = str(year) + m.zfill(2) + d.zfill(2)
-        #             date = str(year) + '/' + str(m.zfill(2)) + '/' + str(d.zfill(2))
-        #             date_list.append(date)
-        '''Second method save variable we need with for loop
-           It\'s so abnormal, even thought it\'s convenience but it\'s so hard to read'''
         url_pool = [(url_head + url_address + url_mid + str(year) + str(('%02d' % month).zfill(2)) +
                      str(('%02d' % day).zfill(2)) + url_mid_two + str(month) + url_tail + str(year))
                     for year in range(year_start, year_end) for month in range(month_start, month_end)
@@ -161,7 +151,8 @@ class All_Url_In_Worker(DefineParameter):
 
 class CrawlerThread(ProtectMeasure, All_Url_In_Worker):
     def __init__(self, save_path, year_initial, year_conclude, address, month_initial, month_conclude):
-        super(CrawlerThread, self).__init__(save_path=save_path, year_initial=year_initial, year_conclude=year_conclude, address=address)
+        super(CrawlerThread, self).__init__(save_path=save_path, year_initial=year_initial,
+                                            year_conclude=year_conclude, address=address)
         self.month_initial = month_initial
         self.month_conclude = month_conclude
 
@@ -192,7 +183,8 @@ class CrawlerThread(ProtectMeasure, All_Url_In_Worker):
                     date_list.remove(date)
                 else:
                     if not os.path.exists(self.path + str(date)[:4] + '/weather-' + str(date)[4:6] + '-month.csv'):
-                        fields = ['Date', 'Time', 'Weather', 'Temperature', 'Wind', 'Wind Direction', 'Humidity', 'Barometer', 'Visibility']
+                        fields = ['Date', 'Time', 'Weather', 'Temperature', 'Wind', 'Wind Direction', 'Humidity',
+                                  'Barometer', 'Visibility']
                         csv_file, write_file = build_file.open_file(date)
                         write_file.writerow(fields)
                     else:
@@ -236,7 +228,8 @@ class CrawlerThread(ProtectMeasure, All_Url_In_Worker):
         async_start = time.time()
 
         async with aiohttp.ClientSession() as session:
-            urls_pool, date_list = self.get_url(self.year_initial, self.year_conclude, self.month_initial, self.month_conclude, 1, 32)
+            urls_pool, date_list = self.get_url(self.year_initial, self.year_conclude, self.month_initial,
+                                                self.month_conclude, 1, 32)
             tasks = [loop.create_task(self.get_results(session, url, date_list)) for url in urls_pool]
             finished, unfinished = await asyncio.wait(tasks)
             all_results = [r.result() for r in finished]
@@ -250,12 +243,15 @@ class CrawlerThread(ProtectMeasure, All_Url_In_Worker):
 
 
 if __name__ == '__main__':
-    crawl_address = 'san-jose'
-    year_start = 2014
+    crawl_address = 'mountain-view'      # The address where you want to crawl to get weather data.
+    year_start = 2014                    # The year you want to get data
     year_end = 2015
-    month_start = 1
+    month_start = 1                      # The month you want to get data
     month_end = 13
-    path = 'D:/DataSource/Python/test/bdse08-02-weather-data/weather-' + crawl_address + '-true-fin-module-asyncio/' + crawl_address + '-weather-'
+
+    path = 'The path where save data you crawled'
+    path_dir = 'The path where save file that merge all data you crawled'
+    path_file_name = 'The file name that save file merge all data you crawled'
 
     asyncio_crawler = CrawlerThread(save_path=path,
                                     year_initial=year_start,
@@ -267,12 +263,15 @@ if __name__ == '__main__':
     loop = asyncio.get_event_loop()
     loop.run_until_complete(asyncio_crawler.main(loop))
 
-    save_path_head = 'D:/DataSource/Python/test/bdse08-02-weather-data/weather-' + crawl_address + '-true-fin-module-asyncio/'
-
-    merge_data = MergeData(save_path=path, year_initial=year_start, year_conclude=year_end, address=crawl_address, save_file_dir=save_path_head)
+    merge_data = MergeData(save_path=path,
+                           year_initial=year_start,
+                           year_conclude=year_end,
+                           address=crawl_address,
+                           save_file_dir=path_dir,
+                           save_path_file_name=path_file_name)
     merge_data.merge()
 
-    print('Program Finish !')
+    print('=========== Program Finish ! =========')
 
 
 '''Note about this program'''

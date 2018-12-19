@@ -46,23 +46,6 @@ class ProtectMeasure:
             'http://203.151.50.213:3128',
             'http://95.87.202.118:80',
             'http://217.196.64.201:50885	',
-            'http://104.248.208.209	:8080',
-            'http://201.148.167.161	:61547',
-            'http://189.206.175.169:50555',
-            'http://195.13.201.98:40511',
-            'http://191.252.192.46:80',
-            'http://72.249.211.149:33075',
-            'http://177.21.118.124:20183',
-            'http://103.233.121.19:43792',
-            'http://190.110.202.230:46061',
-            'http://109.160.91.187:23500',
-            'http://213.6.225.202:40766',
-            'http://83.218.124.155:41258',
-            'http://91.143.172.93:30360',
-            'http://103.65.193.222:30151',
-            'http://121.101.190.246:43708',
-            'http://141.105.99.160:40801',
-            'http://163.158.214.132	:80'
         ]
         proxy = {
             'http': 'http://' + random.choice(proxies_pool),
@@ -95,31 +78,57 @@ class AllUrlInWorker(Parameter):
 
 
 class MergeData(Parameter):
-    def __init__(self, save_path, year_initial, year_conclude, address):
+    def __init__(self, save_path, year_initial, year_conclude, address, save_path_dir, save_path_file_name):
         super(MergeData, self).__init__(save_path=save_path, year_initial=year_initial, year_conclude=year_conclude)
         self.address = address
+        self.save_path_dir = save_path_dir
+        self.save_path_file_name = save_path_file_name
 
 
     def merge(self):
-        weather_year = [pd.DataFrame(pd.read_csv(file)) for data_folder in os.listdir(self.save_path[:-22]) for file in os.listdir(data_folder)]
+        '''Check the path is exit or not, if not, then build it.'''
+        folder = os.path.exists(self.save_path_dir)
+        if not folder:
+            os.makedirs(self.save_path_dir)
+            print(self.save_path_dir)
+            print('Build folder success !!!')
+        else:
+            print('Folder exists.')
+            pass
+
+        new_path_dir_str = '/'
+        path_str_list = self.save_path.split(sep='/')
+        path_str_list.remove(path_str_list[-1])
+        new_path_dir = new_path_dir_str.join(path_str_list)
+
+        weather_year = [pd.DataFrame(pd.read_csv(os.path.join(new_path_dir, data_folder, file))) for data_folder in
+                        os.listdir(new_path_dir) for file in os.listdir(os.path.join(new_path_dir, data_folder))]
         weather_data = pd.concat(weather_year, axis=0, ignore_index=True)
 
-        save_path_head = 'D:/DataSource/Python/test/bdse08-02-weather-data/'
-        save_path_tail = '-weather-data-module-test.csv'
-        save_path = save_path_head + str(self.address) + save_path_tail
+        save_path = self.save_path_dir + str(self.address) + self.save_path_file_name
         pd.DataFrame(weather_data).to_csv(save_path, encoding='utf-8-sig', index=False)
         print('------Data has been merged finish !-------')
 
 
+class DataNotReadyError(Exception):
+    def __init__(self, ErrorInFor):
+        super(DataNotReadyError, self).__init__()
+        self.errorinfor = ErrorInFor
+
+
+    def __str__(self):
+        return self.errorinfor
+
+
 class PrepositiveMeasureVerTwo(AllUrlInWorker):
     def __init__(self, save_path, year_initial, year_conclude, address):
-        super(PrepositiveMeasureVerTwo, self).__init__(save_path=save_path, year_initial=year_initial, year_conclude=year_conclude, address=address)
+        super(PrepositiveMeasureVerTwo, self).__init__(save_path=save_path, year_initial=year_initial,
+                                                       year_conclude=year_conclude, address=address)
 
 
     def get_job_date(self, worker):
         if worker[-3:].isdigit():
             mul = int(int(worker[-3:]) / 12)
-            # if int(worker[-3:]) >= 12*mul and int(worker[-3:]) < 12*(mul+1):
             arg_month = int(worker[-3:]) % 12
             month_begin = 1 + 1 * arg_month
             month_finish = 2 + 1 * arg_month
@@ -141,18 +150,20 @@ class PrepositiveMeasureVerTwo(AllUrlInWorker):
         for year in range(self.year_initial, self.year_initial + int(num_thread / 12)):
             folder = os.path.exists(self.save_path + str(year) + '/')
             if not folder:
-                os.makedirs(path + str(year) + '/')
-                print(path + str(year) + '/')
-                print('Build folder success !!!')
+                try:
+                    os.makedirs(self.save_path + str(year) + '/')
+                    print(self.save_path + str(year) + '/')
+                    print('Build folder success !!!')
+                except BaseException as e:
+                    print('Error: ', e)
+                    print('If this error about file or direction exist so cannot build, then we don\'t care it.')
             else:
                 break
 
         if worker[-3:].isdigit():
             mul = int(int(worker[-3:]) / 12)
-            # if int(worker[-3:]) >= 12*mul and int(worker[-3:]) < 12*(mul+1):
             year = self.year_initial + 1 * mul
             file = self.save_path + str(year) + '/weather-' + str(int(int(worker[-3:]) % 12) + 1) + '-month.csv'
-            # file = self.path + '2013/thread-test-weather-' + str(worker[-3:]) + '.csv'
             csv_file = open(file, 'a+', newline='', encoding='utf-8-sig')
             write_file = csv.writer(csv_file)
             return csv_file, write_file
@@ -165,27 +176,15 @@ class PrepositiveMeasureVerTwo(AllUrlInWorker):
                 print('Program keep operating.')
 
 
-'''Wrap up all the functions (get url, get date list and create file to save data) of third method
-   to be a class so that we can let other class inherit this class'''
-
-
 class PrepositiveMeasureVerThree(AllUrlInWorker):
     def __init__(self, save_path, year_initial, year_conclude, address):
-        super(PrepositiveMeasureVerThree, self).__init__(save_path=save_path, year_initial=year_initial, year_conclude=year_conclude, address=address)
+        super(PrepositiveMeasureVerThree, self).__init__(save_path=save_path, year_initial=year_initial,
+                                                         year_conclude=year_conclude, address=address)
 
-    '''Forth method, we want to use more threads to get ten years data in one time.'''
-
-    '''Quesion : is it better? More faster?
-       Answer 1 :  we crawl from 2009 to 2011 about 2 years and 1 month, took 16.278 seconds
-       Answer 2 : we crawl from 2009 to 2013 about 4 years and 1 month, took 30.092 seconds
-       Answer 3 : we crawl from 2013 to 2017 about 4 years, took 36.027 seconds
-       we look the time it spend in average time, unfortunately, it is a little slower than the
-       situation that we use less threads'''
 
     def get_job_date(self, worker):
         if worker[-3:].isdigit():
             mul = int(int(worker[-3:]) / 24)
-            # if int(worker[-3:]) >= 24*mul and int(worker[-3:]) < 24*(mul+1):
             arg_month = int(worker[-3:]) % 24
             if arg_month < 12:
                 day_begin = 1
@@ -211,36 +210,37 @@ class PrepositiveMeasureVerThree(AllUrlInWorker):
             else:
                 print('Program keep operating.')
 
-    '''This function aim to more faster to get ten years data in one time'''
 
     def open_file(self, worker, num_thread):
         '''Check the path is exit or not, if not, then build it.'''
         for year in range(self.year_initial, self.year_initial + int(num_thread / 12)):
             folder = os.path.exists(self.save_path + str(year) + '/')
             if not folder:
-                os.makedirs(path + str(year) + '/')
-                print(path + str(year) + '/')
-                print('Build folder success !!!')
+                try:
+                    os.makedirs(self.save_path + str(year) + '/')
+                    print(self.save_path + str(year) + '/')
+                    print('Build folder success !!!')
+                except BaseException as e:
+                    print('Error: ', e)
+                    print('If this error about file or direction exist so cannot build, then we don\'t care it.')
             else:
                 break
 
         if worker[-3:].isdigit():
             mul = int(int(worker[-3:]) / 24)
-            if int(worker[-3:]) >= 24 * mul and int(worker[-3:]) < 24 * (mul + 1):
-                year = self.year_initial + 1 * mul
-                # file = self.path + '2013/thread-test-weather-' + str(worker[-3:]) + '.csv'
-                if int(int(worker[-3:]) % 24) < 12:
-                    file = self.path + str(year) + '/weather-' + str(
-                        int(int(worker[-3:]) % 24) + 1) + '-month-first-two-weeks.csv'
-                    csv_file = open(file, 'a+', newline='', encoding='utf-8-sig')
-                    write_file = csv.writer(csv_file)
-                    return csv_file, write_file
-                else:
-                    file = self.path + str(year) + '/weather-' + str(
-                        int(int(worker[-3:]) % 24) - 11) + '-month-second-two-weeks.csv'
-                    csv_file = open(file, 'a+', newline='', encoding='utf-8-sig')
-                    write_file = csv.writer(csv_file)
-                    return csv_file, write_file
+            year = self.year_initial + 1 * mul
+            if int(int(worker[-3:]) % 24) < 12:
+                file = self.save_path + str(year) + '/weather-' + str(
+                    int(int(worker[-3:]) % 24) + 1) + '-month-first-two-weeks.csv'
+                csv_file = open(file, 'a+', newline='', encoding='utf-8-sig')
+                write_file = csv.writer(csv_file)
+                return csv_file, write_file
+            else:
+                file = self.save_path + str(year) + '/weather-' + str(
+                    int(int(worker[-3:]) % 24) - 11) + '-month-second-two-weeks.csv'
+                csv_file = open(file, 'a+', newline='', encoding='utf-8-sig')
+                write_file = csv.writer(csv_file)
+                return csv_file, write_file
         else:
             print('Please check your name of variable \'worker\', the last 3 string is not integer.')
             ans = input('Do you want to stop the program ? (Yes/No)')
@@ -253,12 +253,13 @@ class PrepositiveMeasureVerThree(AllUrlInWorker):
 class CrawlerThread(threading.Thread, ProtectMeasure, PrepositiveMeasureVerTwo):
     def __init__(self, number_thread, save_path, year_initial, year_conclude, address):
         threading.Thread.__init__(self)
+        # super(CrawlerThread, self).__init__(save_path=save_path, year_initial=year_initial,
+        #                                     year_conclude=year_conclude, address=address)
         self.number_thread = number_thread
         self.save_path = save_path
         self.year_initial = year_initial
         self.year_conclude = year_conclude
         self.address = address
-        # super(CrawlerThread, self).__init__(save_path=save_path, year_initial=year_initial, year_conclude=year_conclude, address=address)
 
 
     def sort_data(self, weather_data, num):
@@ -307,8 +308,7 @@ class CrawlerThread(threading.Thread, ProtectMeasure, PrepositiveMeasureVerTwo):
                         write_file.writerow(final_data[j])
                         # print(final_data[j])
                         # print(date_list[0])
-                        # print('第' + str(j) + '筆資料記錄成功 !')
-                        # print('第' + str(data_count) + '筆資料記錄成功 !')
+                        # print('The data of ' + str(j) + 'st day has been recorded success ! - ' + str(worker))
                     count += 1
                     if date_list == 1:
                         print('The data of ' + str(data_count) + 'st day has been recorded success ! - ' + str(worker))
@@ -318,7 +318,14 @@ class CrawlerThread(threading.Thread, ProtectMeasure, PrepositiveMeasureVerTwo):
                         print('The data of ' + str(data_count) + 'rd day has been recorded success ! - ' + str(worker))
                     else:
                         print('The data of ' + str(data_count) + 'th day has been recorded success ! - ' + str(worker))
-                    # print(str(worker) + ' 第' + str(data_count) + '天的半天資料記錄成功 !')
+                    # if date_list == 1:
+                    #     print('The data in half of ' + str(data_count) + 'st day has been recorded success ! - ' + str(worker))
+                    # elif date_list == 2:
+                    #     print('The data in half of ' + str(data_count) + 'nd day has been recorded success ! - ' + str(worker))
+                    # elif date_list == 3:
+                    #     print('The data in half of ' + str(data_count) + 'rd day has been recorded success ! - ' + str(worker))
+                    # else:
+                    #     print('The data in half of ' + str(data_count) + 'th day has been recorded success ! - ' + str(worker))
                     data_count += 1
             except Exception as e:
                 print('-------------------------------------------')
@@ -334,16 +341,14 @@ class CrawlerThread(threading.Thread, ProtectMeasure, PrepositiveMeasureVerTwo):
 
     def run(self):
         tStart = time.time()
+
         fields = ['Date', 'Time', 'Weather', 'Temperature', 'Wind', 'Wind Direction', 'Humidity', 'Barometer', 'Visibility']
-        '''Open file - we let every method of open file(aka create file that we can save data)
-           so that we just change the class this class (class Crawl_Weather) inherit'''
         csv_file, write_file = self.open_file(self.getName(), self.number_thread)
         write_file.writerow(fields)
-        '''Get url, get data - we let every method of open file(aka create file that we can save
-           data) so that we just change the class this class (class Crawl_Weather) inherit'''
         url_pool, date_list = self.get_job_date(self.getName())
         self.determine_and_crawl(url_pool, date_list, write_file, self.getName())
         csv_file.close()
+
         tEnd = time.time()
         print('-------------------------------------')
         print('Total time : ' + str(tEnd-tStart) + ' seconds.')
@@ -354,35 +359,39 @@ class CrawlerThread(threading.Thread, ProtectMeasure, PrepositiveMeasureVerTwo):
 if __name__ == '__main__':
     print('start')
 
-    crawl_address = 'mountain-view'
-    year_start = 2009
+    crawl_address = 'mountain-view'      # The address where you want to crawl to get weather data.
+    year_start = 2009                    # The year you want to get data
     year_end = 2010
-    num_thread = 120
+    num_thread = 120                     # The number of threads
 
-    # path = 'D:/DataSource/Python/test/weather-new-york-4/new-york-weather-'
-    # crawl_address = 'new-york'
-    # path = 'D:/DataSource/Python/test/weather-san-francisco-10/san-francisco-weather-'
-    # crawl_address = 'san-francisco'
-    # path = 'D:/DataSource/Python/test/weather-san-jose-2/san-jose-weather-'
-    # crawl_address = 'san-jose'
-    # path = 'D:/DataSource/Python/test/weather-berkeley-1/berkeley-weather-'
-    # crawl_address = 'berkeley'
-    path = 'D:/DataSource/Python/test/bdse08-02-weather-data/weather-' + crawl_address + '-true-fin-module-threading/' + crawl_address + '-weather-'
+    path = 'The path where save data you crawled'
+    path_dir = 'The path where save file that merge all data you crawled'
+    path_file_name = 'The file name that save file merge all data you crawled'
 
     threads_list = []
     for k in range(num_thread):
-        threads_list.append(CrawlerThread(save_path=path, year_initial=year_start, year_conclude=year_end, address=crawl_address))
+        threads_list.append(CrawlerThread(save_path=path,
+                                          year_initial=year_start,
+                                          year_conclude=year_end,
+                                          address=crawl_address,
+                                          number_thread=num_thread))
         threads_list[k].setName('worker-' + str('%003d' % (k - 1)))
         threads_list[k].start()
 
     for k in range(num_thread):
+        print('It join ...... - ' + str(k))
         threads_list[k].join()
 
-    print('Begin to merge data')
-    consist = MergeData(save_path=path, year_initial=year_start, year_conclude=year_end, address=crawl_address)
-    consist.merge()
+    print('It\'s time to merge all data to a file.')
+    merge_method = MergeData(save_path=path,
+                             year_initial=year_start,
+                             year_conclude=year_end,
+                             address=crawl_address,
+                             save_path_dir=path_dir,
+                             save_path_file_name=path_file_name)
+    merge_method.merge()
 
-    print('==========Program finish !==========')
+    print('============program finish !============')
 
 
 '''note about this program'''
