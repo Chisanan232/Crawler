@@ -10,24 +10,26 @@ import csv
 
 class Fake_Identity:
     def get_header(self):
-        user_agent = ['Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.71 Safari/537.36',
-                      'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.11 (KHTML, like Gecko) Chrome/23.0.1271.64 Safari/537.11',
-                      'Mozilla/5.0 (Windows NT 5.1; U; en; rv:1.8.1) Gecko/20061208 Firefox/2.0.0 Opera 9.50'
+        user_agent = [
+            'Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.71 Safari/537.36',
+            'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.11 (KHTML, like Gecko) Chrome/23.0.1271.64 Safari/537.11',
+            'Mozilla/5.0 (Windows NT 5.1; U; en; rv:1.8.1) Gecko/20061208 Firefox/2.0.0 Opera 9.50'
                       ]
-        headers = {'User-Agent':random.choice(user_agent)}
+        headers = {'User-Agent': random.choice(user_agent)}
         return headers
 
 
-    # proxies = {'https':''}
     def get_proxy(self):
-        proxy = ['5.39.48.34:443',    #super hide
-                 '47.52.209.8:80',
-                 '110.232.86.52:53281',    #super hide
-                 '142.93.11.154:8080',
-                 '219.76.152.80:80'     #111 proxies
+        proxy = [
+            '5.39.48.34:443',
+            '47.52.209.8:80',
+            '110.232.86.52:53281',
+            '142.93.11.154:8080',
+            '219.76.152.80:80'
                  ]
         proxies = {
-            'http':'http://' + random.choice(proxy)
+            'http': 'http://' + random.choice(proxy)
+            # 'https': 'https://' + random.choice(proxy)
             }
         return proxies
 
@@ -39,7 +41,7 @@ class Pq_Crawler:
 
     def open_file(self):
         # remember change your path
-        weather_file = 'D:/DataSource/Python/test/weather-2-class-q.csv'
+        weather_file = 'The path where save data you crawled'
         file = open(weather_file, 'a+', newline='', encoding='utf-8-sig')
         write_csv_file = csv.writer(file)
         return file, write_csv_file
@@ -48,7 +50,7 @@ class Pq_Crawler:
     def crawl(self, url):
         try:
             # q = pq(url=url, proxies={'http':'219.76.152.80:80'}, headers=get_header())
-            q = pq(url=url, proxies=self.fake_proxy, headers=self.fake_user_agent)
+            q = pq(url=url, headers=self.fake_user_agent)
         except BaseException as e:
             print('BaseException : ', e)
             print('Let\'s try it again...')
@@ -90,13 +92,15 @@ class Pq_Crawler:
             except:
                 pass
             write_csv_file.writerow(data[j])
-            print('第' + str(j) + '筆資料記錄成功 !')
+            print('The data of ' + str(j) + 'st day has been recorded success !')
 
 
 if __name__ == '__main__':
-    qcrawl = Pq_Crawler()
-    file, file_write = qcrawl.open_file()
-    fields = ['Date', 'Time', 'Weather', 'Temperature', 'Wind', 'Barometer', 'Wind Direction', 'Humidity', 'Visibility']
+
+    pyquery_crawl = Pq_Crawler()
+
+    file, file_write = pyquery_crawl.open_file()
+    fields = ['Date', 'Time', 'Temperature', 'Weather', 'Wind', 'Barometer', 'Wind Direction', 'Humidity', 'Visibility']
     file_write.writerow(fields)
 
     url_head = 'https://www.timeanddate.com/scripts/cityajax.php?n=usa/new-york&mode=historic&hd='
@@ -106,19 +110,26 @@ if __name__ == '__main__':
     print('start to get data !')
     tStart = time.time()
 
-    for year in range(2013, 2014):
-        for month in range(1, 3):
+    year_start = 2103
+    year_end = 2014
+    month_start = 1
+    month_end = 3
+    day_start = 1
+    day_end = 10
+
+    for year in range(year_start, year_end):
+        for month in range(month_start, month_end):
             m = '%02d' % month
             try:
-                for day in range(1, 10):
+                for day in range(day_start, day_end):
                     d = '%02d' % day
                     target_url = url_head + str(year) + m.zfill(2) + d.zfill(2) + url_mid + str(month) + url_tail + str(
                         year)
                     print(target_url)
-                    q = qcrawl.crawl(target_url)
-                    weather, wind_data = qcrawl.parser(q)
-                    final_data = qcrawl.sort_data(weather, 8)
-                    qcrawl.get_data(final_data, wind_data, file_write)
+                    q = pyquery_crawl.crawl(target_url)
+                    weather, wind_data = pyquery_crawl.parser(q)
+                    final_data = pyquery_crawl.sort_data(weather, 8)
+                    pyquery_crawl.get_data(final_data, wind_data, file_write)
                     # time.sleep(random.randint(random.randint(1, 7), random.randint(8, 13)))
             except BaseException as e:
                 print('Error : ', e)
@@ -128,8 +139,8 @@ if __name__ == '__main__':
 
     file.close()
 
-    print('finish')
+    print('Finish')
     tEnd = time.time()
-    print('this crawler program totally take ' + str(tEnd-tStart) + ' seconds to get data.')
+    print('This crawler program totally take ' + str(tEnd - tStart) + ' seconds to get data.')
 
 
