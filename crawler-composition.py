@@ -96,7 +96,8 @@ if __name__ == '__main__':
     build_file = File()
 
     f, file = build_file.open_file()
-    fields = ['Date', 'Time', 'Weather', 'Temperature', 'Wind', 'Barometer', 'Wind Direction', 'Humidity', 'Visibility']
+    fields = [tuple(x) for x in ['Date', 'Time', 'Weather', 'Temperature', 'Wind', 'Barometer', 'Wind Direction', 'Humidity', 'Visibility']]
+    # fields = ['Date', 'Time', 'Weather', 'Temperature', 'Wind', 'Barometer', 'Wind Direction', 'Humidity', 'Visibility']
     file.writerow(fields)
 
     urlhead = 'https://www.timeanddate.com/scripts/cityajax.php?n=usa/san-francisco&mode=historic&hd='
