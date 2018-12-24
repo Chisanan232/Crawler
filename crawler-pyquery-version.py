@@ -100,7 +100,7 @@ if __name__ == '__main__':
     pyquery_crawl = Pq_Crawler()
 
     file, file_write = pyquery_crawl.open_file()
-    fields = ['Date', 'Time', 'Temperature', 'Weather', 'Wind', 'Barometer', 'Wind Direction', 'Humidity', 'Visibility']
+    fields = [tuple(x) for x in ['Date', 'Time', 'Weather', 'Temperature', 'Wind', 'Barometer', 'Wind Direction', 'Humidity', 'Visibility']]
     file_write.writerow(fields)
 
     url_head = 'https://www.timeanddate.com/scripts/cityajax.php?n=usa/new-york&mode=historic&hd='
