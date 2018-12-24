@@ -342,12 +342,14 @@ class BsCrawler(FakeIdentity, PrepositiveMeasureVerTwo):
     @threads(120)
     def main_job(self, worker):
         crawl_start_time = time.time()
-        fields = ['Date', 'Time', 'Weather', 'Temperature', 'Wind', 'Wind Direction', 'Humidity', 'Barometer', 'Visibility']
+
+        fields = [tuple(x) for x in ['Date', 'Time', 'Weather', 'Temperature', 'Wind', 'Barometer', 'Wind Direction', 'Humidity', 'Visibility']]
         csv_file, write_file = self.open_file(worker)
         write_file.writerow(fields)
         url_pool, date_list = self.get_job_date(worker)
         self.parser(url_pool, date_list, write_file, worker)
         csv_file.close()
+
         crawl_end_time = time.time()
         print('------------------------')
         print('Total time: ' + str(crawl_end_time - crawl_start_time) + ' seconds. - ' + str(worker))
