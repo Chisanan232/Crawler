@@ -186,8 +186,6 @@ class CrawlerThread(ProtectMeasure, All_Url_In_Worker):
                         fields = [tuple(x) for x in
                                   ['Date', 'Time', 'Weather', 'Temperature', 'Wind', 'Barometer', 'Wind Direction',
                                    'Humidity', 'Visibility']]
-                        # fields = ['Date', 'Time', 'Weather', 'Temperature', 'Wind', 'Wind Direction', 'Humidity',
-                        #           'Barometer', 'Visibility']
                         csv_file, write_file = build_file.open_file(date)
                         write_file.writerow(fields)
                     else:
