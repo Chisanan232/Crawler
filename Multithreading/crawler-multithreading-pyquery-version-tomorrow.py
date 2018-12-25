@@ -382,4 +382,3 @@ if __name__ == '__main__':
 
     for worker in workers_list:
         crawl_thread.job(worker)
-
