@@ -22,7 +22,7 @@ weatherfile = 'The path where save data you crawled'
 # Our data's headers
 fields = ['Time', 'Weather', 'Temperature', 'Wind', 'Barometer', 'Wind Direction', 'Humidity', 'Visibility']
 
-f = open(weatherfile, 'a+', newline='')
+f = open(weatherfile, 'a+', newline='', encoding='utf-8')
 file = csv.writer(f)
 file.writerow(fields)
 
