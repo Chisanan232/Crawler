@@ -46,7 +46,7 @@ class Fake_Identity:
 class File:
     def open_file(self):
         weatherfile = 'The path where save data we crawled'
-        file = open(weatherfile, 'a+', newline='')
+        file = open(weatherfile, 'a+', newline='', encoding='utf-8-sig')
         csv_write_file = csv.writer(file)
         return file, csv_write_file
 
