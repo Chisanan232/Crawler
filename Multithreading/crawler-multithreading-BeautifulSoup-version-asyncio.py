@@ -183,9 +183,8 @@ class CrawlerThread(ProtectMeasure, All_Url_In_Worker):
                     date_list.remove(date)
                 else:
                     if not os.path.exists(self.path + str(date)[:4] + '/weather-' + str(date)[4:6] + '-month.csv'):
-                        fields = [tuple(x) for x in
-                                  ['Date', 'Time', 'Weather', 'Temperature', 'Wind', 'Barometer', 'Wind Direction',
-                                   'Humidity', 'Visibility']]
+                        fields = ('Date', 'Time', 'Weather', 'Temperature', 'Wind', 'Barometer', 'Wind Direction',
+                                   'Humidity', 'Visibility')
                         csv_file, write_file = build_file.open_file(date)
                         write_file.writerow(fields)
                     else:
