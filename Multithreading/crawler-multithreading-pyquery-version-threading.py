@@ -342,9 +342,7 @@ class CrawlerThread(threading.Thread, ProtectMeasure, PrepositiveMeasureVerTwo):
     def run(self):
         tStart = time.time()
 
-        fields = [tuple(x) for x in
-                  ['Date', 'Time', 'Weather', 'Temperature', 'Wind', 'Barometer', 'Wind Direction', 'Humidity',
-                   'Visibility']]
+        fields = ('Date', 'Time', 'Weather', 'Temperature', 'Wind', 'Barometer', 'Wind Direction', 'Humidity', 'Visibility')
         csv_file, write_file = self.open_file(self.getName(), self.number_thread)
         write_file.writerow(fields)
         url_pool, date_list = self.get_job_date(self.getName())

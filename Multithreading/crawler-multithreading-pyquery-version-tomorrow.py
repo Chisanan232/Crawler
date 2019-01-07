@@ -338,9 +338,7 @@ class Crawl(Protect_Measure, Prepositive_Measure_Ver_Two):
     def job(self, worker):
         tStart = time.time()
 
-        fields = [tuple(x) for x in
-                  ['Date', 'Time', 'Weather', 'Temperature', 'Wind', 'Barometer', 'Wind Direction', 'Humidity',
-                   'Visibility']]
+        fields = ('Date', 'Time', 'Weather', 'Temperature', 'Wind', 'Barometer', 'Wind Direction', 'Humidity', 'Visibility')
         csv_file, write_file = self.open_file(worker, self.number_threads)
         write_file.writerow(fields)
         url_pool, date_list = self.get_job_date(worker)
