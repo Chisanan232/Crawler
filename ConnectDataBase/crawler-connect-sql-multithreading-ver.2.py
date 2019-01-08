@@ -1,10 +1,11 @@
 from selenium import webdriver
 from bs4 import BeautifulSoup
-from tomorrow import threads
 import pandas as pd
+import threading
 import requests
 import sqlite3
 import random
+import queue
 import time
 import csv
 import os
@@ -19,7 +20,7 @@ class Parameter:
 
 class Sql_DataBase:
     def create_database(self):
-        connect_sql = sqlite3.connect('boss-thread.sqlite')
+        connect_sql = sqlite3.connect('multiple_conn.sqlite')
         job_content_sql = connect_sql.cursor()
         return connect_sql, job_content_sql
 
@@ -38,7 +39,11 @@ class Sql_DataBase:
 
 
 class File:
-    '''Distribute all data into a mount of threads number and build the same quantity files where save the data we crawled'''
+
+    '''
+    Distribute all data into a mount of threads number and build the same quantity files where save the data we crawled
+    '''
+
     def create_file(self, worker, target_file_dir):
         fields = ["job_name", "average_price", "skills", "job_link"]
         if target_file_dir[-1] == '/':
@@ -63,7 +68,11 @@ class File:
 
 
 class DataNotReadyError(Exception):
-    '''Define the exception because after we crawled finish, we will merge all data we crawled and insert it into SQL DB'''
+
+    '''
+    Define the exception because after we crawled finish, we will merge all data we crawled and insert it into SQL DB
+    '''
+
     def __init__(self, ErrorInfro):
         super(DataNotReadyError, self).__init__()
         self.errorinfro = ErrorInfro
@@ -95,8 +104,11 @@ class Protect_Measure:
         return header
 
 
-    '''We have to pay attention to this function because we use free proxies from google search, it's unstable, it
-       may cause we some trouble like reduce rate of crawler, even as let the net work be down.'''
+    '''
+    We have to pay attention to this function because we use free proxies from google search, it's unstable, it may cause 
+    we some trouble like reduce rate of crawler, even as let the net work be down.
+    '''
+
     def get_proxy(self):
         proxies_pool = [
             'http://104.248.208.209	:8080',
@@ -114,7 +126,11 @@ class Protect_Measure:
 
 
 class Automatic_Web(Parameter, Protect_Measure):
-    '''We want to get all data of web, so we have to know number of the last page'''
+
+    '''
+    We want to get all data of web, so we have to know number of the last page
+    '''
+
     def __init__(self, url, head_url):
         super(Automatic_Web, self).__init__(url=url, head_url=head_url)
 
@@ -137,7 +153,11 @@ class Automatic_Web(Parameter, Protect_Measure):
 
 
 class Crawl(Protect_Measure):
-    '''Distribute work (which pages are crawled) thread should be to do to every treads'''
+
+    '''
+    Distribute work (which pages are crawled) thread should be to do to every treads
+    '''
+
     def distribute_url_page(self, page_number, thread_number):
         divide_num = int(int(page_number) / int(thread_number))
         if int(page_number) % int(thread_number) == 0:
@@ -212,31 +232,38 @@ class Crawl(Protect_Measure):
 
 
 
-class Main_Work(Parameter, Crawl):
-    '''Main job what to do in every threads'''
-    def __init__(self, url, head_url, all_web_page, target_file_dir):
-        super(Main_Work, self).__init__(url=url, head_url=head_url)
+class Main_Work(threading.Thread, Parameter, Crawl):
+
+    '''
+    Main job what to do in every threads
+    '''
+
+    def __init__(self, url, head_url, all_web_page, target_file_dir, thread_num):
+        threading.Thread.__init__(self)
+        # super(Main_Work, self).__init__(url=url, head_url=head_url)
+        self.url = url
+        self.head_url = head_url
         self.all_web_page = all_web_page
         self.target_file_dir = target_file_dir
+        self.thread_num = thread_num
 
 
-    @threads(50)
-    def main_job(self, worker, thread_num):
+    def run(self):
         get_data_start = time.time()
 
         # save_file = File()
-        file, writer_file = save_file.create_file(worker, self.target_file_dir)
+        file, writer_file = save_file.create_file(self.getName(), self.target_file_dir)
 
         miss_data_page_list = []
-        divide_num = int(int(self.all_web_page) / thread_num) + 1
-        print('The thread\'s responsible for from page ' + str(int(worker[-3:]) * divide_num) + ' to ' +
-              str((int(worker[-3:]) + 1) * divide_num) + '. - ' + str(worker))
-        for page in range(int(worker[-3:]) * divide_num, (int(worker[-3:]) + 1) * divide_num):
+        divide_num = int(int(self.all_web_page) / self.thread_num) + 1
+        print('The thread\'s responsible for from page ' + str(int(self.getName()[-3:]) * divide_num) + ' to ' +
+              str((int(self.getName()[-3:]) + 1) * divide_num) + '. - ' + str(self.getName()))
+        for page in range(int(self.getName()[-3:]) * divide_num, (int(self.getName()[-3:]) + 1) * divide_num):
             aim_url = self.url + str(page)
             html = self.get_url(aim_url)
-            miss_data_page_list = self.crawl(html, self.head_url, writer_file, page, miss_data_page_list, worker)
+            miss_data_page_list = self.crawl(html, self.head_url, writer_file, page, miss_data_page_list, self.getName())
 
-        print('Finish ! ! ! - ' + str(worker))
+        print('Finish ! ! ! - ' + str(self.getName()))
         print('-----------Get data success ! -----------')
         if miss_data_page_list:
             print('Unfortunately, your data miss something. The page that data is miss below:')
@@ -244,7 +271,7 @@ class Main_Work(Parameter, Crawl):
         else:
             print('Congratulation ! The data is not miss any data !')
         get_data_end = time.time()
-        print('-----------Total time : ' + str(get_data_end - get_data_start) + ' seconds. - ' + str(worker) + ' -----------')
+        print('-----------Total time : ' + str(get_data_end - get_data_start) + ' seconds. - ' + str(self.getName()) + ' -----------')
 
 
 if __name__ == '__main__':
@@ -254,7 +281,7 @@ if __name__ == '__main__':
 
     target_url = 'https://www.freelancer.com/jobs/'
     web_head_url = 'https://www.freelancer.com'
-    save_file_dir = 'D:/DataSource/Python/test/prevent-data-sqldb/'
+    save_file_dir = 'C:/Users/iAirJordan/Desktop/jupyter-data/prevent-data-sqldb/'
 
     sql_db = Sql_DataBase()
     conn_sql, job_sql = sql_db.create_database()
@@ -265,49 +292,59 @@ if __name__ == '__main__':
 
     save_file = File()
 
-    thread_job = Main_Work(url=target_url, head_url=web_head_url, all_web_page=page_num, target_file_dir=save_file_dir)
     print('Start to get data we want !')
     workers_list = ['worker-' + str(('%003d' % i).zfill(3)) for i in range(thread_num)]
-    for j in workers_list:
-        thread_job.main_job(j, thread_num)
+    thread_list = []
+    for k in range(thread_num):
+        thread_list.append(Main_Work(url=target_url,
+                                     head_url=web_head_url,
+                                     all_web_page=page_num,
+                                     target_file_dir=save_file_dir,
+                                     thread_num=thread_num))
+        thread_list[k].setName('worker-'+str('%003d' % (k-1)))
+        thread_list[k].start()
+
+    for k in range(thread_num):
+        print('It join ...... - ' + str(k))
+        thread_list[k].join()
 
     '''After crawled, we will merge all data into a file, and then insert it into DB. In exactly, this step and lines 272 
        step are synchronal, therefore we use the logic from lines 278 to lines 306 and with we define exception ourself 
        to reach that we can be sure all data have been finish, then program will continue.'''
-    crawler = Crawl()
-    data_quantity = crawler.get_time(target_url)
-    thread_page = int(page_num / thread_num) + 1
-    all_thread_num = int(page_num / thread_page) + 1
-    surplus_thread_num = all_thread_num - thread_num
-    last_thread_page = page_num - (all_thread_num - 1) * thread_page
-    while True:
-        try:
-            for file in os.listdir(save_file_dir)[:surplus_thread_num]:
-                if file == 'job-data-thread-' + str(('%003d' % (thread_num - 1)).zfill(3)) + '.csv':
-                    if os.path.getsize(os.path.join(save_file_dir, file)) / 1024 > 0.16 * float(int(data_quantity) *
-                                                                                                last_thread_page):
-                        print('All data has been recorded success ! Time to insert data to SQL DB ! - main_thread')
-                    else:
-                        print('Program will sleep for 300 seconds ...... zzzzzzz - main_thread')
-                        time.sleep(300)
-                        raise DataNotReadyError('Data is not ready ...... - main_thread')
-                else:
-                    if os.path.getsize(os.path.join(save_file_dir, file)) / 1024 > 0.16 * float(int(data_quantity) *
-                                                                                                (int(page_num / thread_num) + 1)):
-                        print('All data has been recorded success ! Time to insert data to SQL DB ! - main_thread')
-                    else:
-                        print('Program will sleep for 300 seconds ...... zzzzzzz - main_thread')
-                        time.sleep(300)
-                        raise DataNotReadyError('Data is not ready ...... - main_thread')
-        except BaseException as e:
-            print(e)
-            continue
-        break
-    print('Start to insert data to SQL database. - main_thread')
-    data = save_file.data_merge(save_file_dir)
-    data_pd = pd.DataFrame(data)
-    for index in range(data_pd.count()):
-        sql_db.insert_data(job_sql, data_pd.iloc[index])
+    # crawler = Crawl()
+    # data_quantity = crawler.get_time(target_url)
+    # thread_page = int(page_num / thread_num) + 1
+    # all_thread_num = int(page_num / thread_page) + 1
+    # surplus_thread_num = all_thread_num - thread_num
+    # last_thread_page = page_num - (all_thread_num - 1) * thread_page
+    # while True:
+    #     try:
+    #         for file in os.listdir(save_file_dir)[:surplus_thread_num]:
+    #             if file == 'job-data-thread-' + str(('%003d' % (thread_num - 1)).zfill(3)) + '.csv':
+    #                 if os.path.getsize(os.path.join(save_file_dir, file)) / 1024 > 0.16 * float(int(data_quantity) *
+    #                                                                                             last_thread_page):
+    #                     print('All data has been recorded success ! Time to insert data to SQL DB ! - main_thread')
+    #                 else:
+    #                     print('Program will sleep for 300 seconds ...... zzzzzzz - main_thread')
+    #                     time.sleep(300)
+    #                     raise DataNotReadyError('Data is not ready ...... - main_thread')
+    #             else:
+    #                 if os.path.getsize(os.path.join(save_file_dir, file)) / 1024 > 0.16 * float(int(data_quantity) *
+    #                                                                                             (int(page_num / thread_num) + 1)):
+    #                     print('All data has been recorded success ! Time to insert data to SQL DB ! - main_thread')
+    #                 else:
+    #                     print('Program will sleep for 300 seconds ...... zzzzzzz - main_thread')
+    #                     time.sleep(300)
+    #                     raise DataNotReadyError('Data is not ready ...... - main_thread')
+    #     except BaseException as e:
+    #         print(e)
+    #         continue
+    #     break
+    # print('Start to insert data to SQL database. - main_thread')
+    # data = save_file.data_merge(save_file_dir)
+    # data_pd = pd.DataFrame(data)
+    # for index in range(data_pd.count()):
+    #     sql_db.insert_data(job_sql, data_pd.iloc[index])
 
     program_end = time.time()
     print('=====Finish all job !!!===== - main_thread')
