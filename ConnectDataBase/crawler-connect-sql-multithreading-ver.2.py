@@ -38,33 +38,33 @@ class Sql_DataBase:
         job_content_sql.execute(sql_insert_cmd, data_list)
 
 
-class File:
-
-    '''
-    Distribute all data into a mount of threads number and build the same quantity files where save the data we crawled
-    '''
-
-    def create_file(self, worker, target_file_dir):
-        fields = ["job_name", "average_price", "skills", "job_link"]
-        if target_file_dir[-1] == '/':
-            data_file = target_file_dir + 'job-data-thread-' + worker[-3:] + '.csv'
-            file = open(data_file, '+a', encoding='utf-8-sig', newline='')
-            writer_file = csv.writer(file)
-            writer_file.writerow(fields)
-            print('Build file success !!! - ' + str(worker))
-        else:
-            data_file = target_file_dir + '/job-data-thread-' + worker[-3:] + '.csv'
-            file = open(data_file, '+a', encoding='utf-8-sig', newline='')
-            writer_file = csv.writer(file)
-            writer_file.writerow(fields)
-            print('Build file success !!! - ' + str(worker))
-        return file, writer_file
-
-
-    def data_merge(self, target_file_dir):
-        all_data = pd.concat([pd.DataFrame(pd.read_csv(os.path.join(target_file_dir, file))) for file in
-                              os.listdir(target_file_dir)], axis=0, ignore_index=True)
-        return all_data
+# class File:
+#
+#     '''
+#     Distribute all data into a mount of threads number and build the same quantity files where save the data we crawled
+#     '''
+#
+#     def create_file(self, worker, target_file_dir):
+#         fields = ("job_name", "average_price", "skills", "job_link")
+#         if target_file_dir[-1] == '/':
+#             data_file = target_file_dir + 'job-data-thread-' + worker[-3:] + '.csv'
+#             file = open(data_file, '+a', encoding='utf-8-sig', newline='')
+#             writer_file = csv.writer(file)
+#             writer_file.writerow(fields)
+#             print('Build file success !!! - ' + str(worker))
+#         else:
+#             data_file = target_file_dir + '/job-data-thread-' + worker[-3:] + '.csv'
+#             file = open(data_file, '+a', encoding='utf-8-sig', newline='')
+#             writer_file = csv.writer(file)
+#             writer_file.writerow(fields)
+#             print('Build file success !!! - ' + str(worker))
+#         return file, writer_file
+#
+#
+#     def data_merge(self, target_file_dir):
+#         all_data = pd.concat([pd.DataFrame(pd.read_csv(os.path.join(target_file_dir, file))) for file in
+#                               os.listdir(target_file_dir)], axis=0, ignore_index=True)
+#         return all_data
 
 
 class DataNotReadyError(Exception):
@@ -174,7 +174,7 @@ class Crawl(Protect_Measure):
         return html
 
 
-    def crawl(self, html, head_url, writer_file, page, miss_list, worker):
+    def crawl(self, html, head_url, page, miss_list, lock, worker):
         if html.status_code == requests.codes.ok:
             soup = BeautifulSoup(html.text, 'html.parser')
             data_rows = soup.select('a.JobSearchCard-primary-heading-link')
@@ -189,9 +189,14 @@ class Crawl(Protect_Measure):
                 if len(job_name_list) == 0:
                     print('Page ' + str(page) + ', has no data. - ' + str(worker))
                 else:
+                    lock.acquire()
+                    print('Thread be lock - ' + str(worker))
                     for index in range(0, len(job_name_list)):
                         data_list = [job_name_list[index], avg_price_list[index], skills_list[index], job_url_list[index]]
-                        writer_file.writerow(data_list)
+                        sql_db.insert_data(job_sql, data_list)
+                        conn_sql.commit()
+                    lock.release()
+                    print('Thread be release - ' + str(worker))
                     print('Page ' + str(page) + ', ' + str(len(job_name_list)) + ' data has been recorded success !!! - ' + str(worker))
             else:
                 print('------------------------------------------------')
@@ -238,9 +243,10 @@ class Main_Work(threading.Thread, Parameter, Crawl):
     Main job what to do in every threads
     '''
 
-    def __init__(self, url, head_url, all_web_page, target_file_dir, thread_num):
+    def __init__(self, lock, url, head_url, all_web_page, target_file_dir, thread_num):
         threading.Thread.__init__(self)
         # super(Main_Work, self).__init__(url=url, head_url=head_url)
+        self.lock = lock
         self.url = url
         self.head_url = head_url
         self.all_web_page = all_web_page
@@ -251,9 +257,6 @@ class Main_Work(threading.Thread, Parameter, Crawl):
     def run(self):
         get_data_start = time.time()
 
-        # save_file = File()
-        file, writer_file = save_file.create_file(self.getName(), self.target_file_dir)
-
         miss_data_page_list = []
         divide_num = int(int(self.all_web_page) / self.thread_num) + 1
         print('The thread\'s responsible for from page ' + str(int(self.getName()[-3:]) * divide_num) + ' to ' +
@@ -261,7 +264,7 @@ class Main_Work(threading.Thread, Parameter, Crawl):
         for page in range(int(self.getName()[-3:]) * divide_num, (int(self.getName()[-3:]) + 1) * divide_num):
             aim_url = self.url + str(page)
             html = self.get_url(aim_url)
-            miss_data_page_list = self.crawl(html, self.head_url, writer_file, page, miss_data_page_list, self.getName())
+            miss_data_page_list = self.crawl(html, self.head_url, page, miss_data_page_list, self.lock, self.getName())
 
         print('Finish ! ! ! - ' + str(self.getName()))
         print('-----------Get data success ! -----------')
@@ -290,13 +293,13 @@ if __name__ == '__main__':
     get_page_num = Automatic_Web(url=target_url, head_url=web_head_url)
     page_num = get_page_num.driver()
 
-    save_file = File()
+    thread_lock = threading.Lock()
 
     print('Start to get data we want !')
-    workers_list = ['worker-' + str(('%003d' % i).zfill(3)) for i in range(thread_num)]
     thread_list = []
     for k in range(thread_num):
-        thread_list.append(Main_Work(url=target_url,
+        thread_list.append(Main_Work(lock=thread_lock,
+                                     url=target_url,
                                      head_url=web_head_url,
                                      all_web_page=page_num,
                                      target_file_dir=save_file_dir,
