@@ -19,7 +19,7 @@ class Parameter:
     
 
 class Sql_DataBase:
-    def create_database(self):
+    def connect_database(self):
         connect_sql = sqlite3.connect('multiple_conn.sqlite')
         job_content_sql = connect_sql.cursor()
         return connect_sql, job_content_sql
@@ -174,7 +174,7 @@ class Crawl(Protect_Measure):
         return html
 
 
-    def crawl(self, html, head_url, page, miss_list, lock, worker):
+    def crawl(self, html, head_url, page, miss_list, lock, thread_sql, thread_job_sql, worker):
         if html.status_code == requests.codes.ok:
             soup = BeautifulSoup(html.text, 'html.parser')
             data_rows = soup.select('a.JobSearchCard-primary-heading-link')
@@ -189,13 +189,16 @@ class Crawl(Protect_Measure):
                 if len(job_name_list) == 0:
                     print('Page ' + str(page) + ', has no data. - ' + str(worker))
                 else:
+
                     lock.acquire()
+
                     print('Thread be lock - ' + str(worker))
                     for index in range(0, len(job_name_list)):
                         data_list = [job_name_list[index], avg_price_list[index], skills_list[index], job_url_list[index]]
-                        sql_db.insert_data(job_sql, data_list)
-                        conn_sql.commit()
+                        thread_sql.insert_data(thread_job_sql, data_list)
+
                     lock.release()
+
                     print('Thread be release - ' + str(worker))
                     print('Page ' + str(page) + ', ' + str(len(job_name_list)) + ' data has been recorded success !!! - ' + str(worker))
             else:
@@ -243,19 +246,21 @@ class Main_Work(threading.Thread, Parameter, Crawl):
     Main job what to do in every threads
     '''
 
-    def __init__(self, lock, url, head_url, all_web_page, target_file_dir, thread_num):
+    def __init__(self, lock, url, head_url, all_web_page, thread_num):
         threading.Thread.__init__(self)
         # super(Main_Work, self).__init__(url=url, head_url=head_url)
         self.lock = lock
         self.url = url
         self.head_url = head_url
         self.all_web_page = all_web_page
-        self.target_file_dir = target_file_dir
         self.thread_num = thread_num
 
 
     def run(self):
         get_data_start = time.time()
+
+        thread_sql = Sql_DataBase()
+        thread_conn_sql, thread_job_sql = thread_sql.connect_database()
 
         miss_data_page_list = []
         divide_num = int(int(self.all_web_page) / self.thread_num) + 1
@@ -264,7 +269,7 @@ class Main_Work(threading.Thread, Parameter, Crawl):
         for page in range(int(self.getName()[-3:]) * divide_num, (int(self.getName()[-3:]) + 1) * divide_num):
             aim_url = self.url + str(page)
             html = self.get_url(aim_url)
-            miss_data_page_list = self.crawl(html, self.head_url, page, miss_data_page_list, self.lock, self.getName())
+            miss_data_page_list = self.crawl(html, self.head_url, page, miss_data_page_list, self.lock, thread_sql, thread_job_sql, self.getName())
 
         print('Finish ! ! ! - ' + str(self.getName()))
         print('-----------Get data success ! -----------')
@@ -284,11 +289,12 @@ if __name__ == '__main__':
 
     target_url = 'https://www.freelancer.com/jobs/'
     web_head_url = 'https://www.freelancer.com'
-    save_file_dir = 'C:/Users/iAirJordan/Desktop/jupyter-data/prevent-data-sqldb/'
+    # save_file_dir = 'C:/Users/iAirJordan/Desktop/jupyter-data/prevent-data-sqldb/'
 
     sql_db = Sql_DataBase()
-    conn_sql, job_sql = sql_db.create_database()
+    conn_sql, job_sql = sql_db.connect_database()
     sql_db.create_table(conn_sql, job_sql)
+    conn_sql.close()
 
     get_page_num = Automatic_Web(url=target_url, head_url=web_head_url)
     page_num = get_page_num.driver()
@@ -302,7 +308,6 @@ if __name__ == '__main__':
                                      url=target_url,
                                      head_url=web_head_url,
                                      all_web_page=page_num,
-                                     target_file_dir=save_file_dir,
                                      thread_num=thread_num))
         thread_list[k].setName('worker-'+str('%003d' % (k-1)))
         thread_list[k].start()
