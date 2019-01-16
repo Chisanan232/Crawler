@@ -38,33 +38,42 @@ class Sql_DataBase:
         job_content_sql.execute(sql_insert_cmd, data_list)
 
 
-# class File:
-#
-#     '''
-#     Distribute all data into a mount of threads number and build the same quantity files where save the data we crawled
-#     '''
-#
-#     def create_file(self, worker, target_file_dir):
-#         fields = ("job_name", "average_price", "skills", "job_link")
-#         if target_file_dir[-1] == '/':
-#             data_file = target_file_dir + 'job-data-thread-' + worker[-3:] + '.csv'
-#             file = open(data_file, '+a', encoding='utf-8-sig', newline='')
-#             writer_file = csv.writer(file)
-#             writer_file.writerow(fields)
-#             print('Build file success !!! - ' + str(worker))
-#         else:
-#             data_file = target_file_dir + '/job-data-thread-' + worker[-3:] + '.csv'
-#             file = open(data_file, '+a', encoding='utf-8-sig', newline='')
-#             writer_file = csv.writer(file)
-#             writer_file.writerow(fields)
-#             print('Build file success !!! - ' + str(worker))
-#         return file, writer_file
-#
-#
-#     def data_merge(self, target_file_dir):
-#         all_data = pd.concat([pd.DataFrame(pd.read_csv(os.path.join(target_file_dir, file))) for file in
-#                               os.listdir(target_file_dir)], axis=0, ignore_index=True)
-#         return all_data
+class File:
+
+    '''
+    Distribute all data into a mount of threads number and build the same quantity files where save the data we crawled
+    '''
+
+    def create_file(self, worker, target_file_dir):
+        fields = ("job_name", "average_price", "skills", "job_link")
+        if target_file_dir[-1] == '/':
+            data_file = target_file_dir + 'job-data-thread-' + worker[-3:] + '.csv'
+            file = open(data_file, '+a', encoding='utf-8-sig', newline='')
+            writer_file = csv.writer(file)
+            writer_file.writerow(fields)
+            print('Build file success !!! - ' + str(worker))
+        else:
+            data_file = target_file_dir + '/job-data-thread-' + worker[-3:] + '.csv'
+            file = open(data_file, '+a', encoding='utf-8-sig', newline='')
+            writer_file = csv.writer(file)
+            writer_file.writerow(fields)
+            print('Build file success !!! - ' + str(worker))
+        return file, writer_file
+
+
+    def data_merge(self, target_file_dir):
+        all_data = pd.concat([pd.DataFrame(pd.read_csv(os.path.join(target_file_dir, file))) for file in
+                              os.listdir(target_file_dir)], axis=0, ignore_index=True)
+        return all_data
+
+    '''
+    Record the data be lose when program is crawling.
+    '''
+
+    def record_lose_data(self, lose_file):
+        lose_data_file = open(lose_file, encoding='utf-8-sig', newline='')
+        csv_lose_file = csv.writer(lose_data_file)
+        return lose_data_file, csv_lose_file
 
 
 class DataNotReadyError(Exception):
@@ -259,6 +268,7 @@ class Main_Work(threading.Thread, Parameter, Crawl):
     def run(self):
         get_data_start = time.time()
 
+        print('------Start connect with SQLite DataBase.------')
         thread_sql = Sql_DataBase()
         thread_conn_sql, thread_job_sql = thread_sql.connect_database()
 
@@ -270,7 +280,10 @@ class Main_Work(threading.Thread, Parameter, Crawl):
             aim_url = self.url + str(page)
             html = self.get_url(aim_url)
             miss_data_page_list = self.crawl(html, self.head_url, page, miss_data_page_list, self.lock, thread_sql, thread_job_sql, self.getName())
+            thread_conn_sql.commit()
 
+        thread_conn_sql.close()
+        print('------Close the connect wih SQLite DataBase.------')
         print('Finish ! ! ! - ' + str(self.getName()))
         print('-----------Get data success ! -----------')
         if miss_data_page_list:
@@ -357,3 +370,18 @@ if __name__ == '__main__':
     program_end = time.time()
     print('=====Finish all job !!!===== - main_thread')
     print('Total time: ' + str(program_end - program_start) + ' seconds. - main_thread')
+
+
+'''
+Note of program :
+
+Error :
+sqlite3.ProgrammingError: SQLite objects created in a thread can only be used in that same thread.The object was created 
+in thread id 44440 and this is thread id 64032
+
+Solution :
+SQLite objects (the conneciton, and the cursor) in the same method.
+
+The solution consultation url :
+https://stackoverflow.com/questions/48218065/programmingerror-sqlite-objects-created-in-a-thread-can-only-be-used-in-that-sa
+'''
