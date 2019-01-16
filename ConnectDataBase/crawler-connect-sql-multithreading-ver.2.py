@@ -70,8 +70,9 @@ class File:
     Record the data be lose when program is crawling.
     '''
 
-    def record_lose_data(self, lose_file):
-        lose_data_file = open(lose_file, encoding='utf-8-sig', newline='')
+    def record_lose_data(self):
+        lose_data_path = ''
+        lose_data_file = open(lose_data_path, encoding='utf-8-sig', newline='')
         csv_lose_file = csv.writer(lose_data_file)
         return lose_data_file, csv_lose_file
 
@@ -184,6 +185,9 @@ class Crawl(Protect_Measure):
 
 
     def crawl(self, html, head_url, page, miss_list, lock, thread_sql, thread_job_sql, worker):
+
+        file_object = File()
+
         if html.status_code == requests.codes.ok:
             soup = BeautifulSoup(html.text, 'html.parser')
             data_rows = soup.select('a.JobSearchCard-primary-heading-link')
@@ -194,7 +198,7 @@ class Crawl(Protect_Measure):
             skills_list = [self.crawl_get_job_skill(head_url + (data_row.get('href'))) for data_row in data_rows]
             job_url_list = [(head_url + (data_row.get('href'))) for data_row in data_rows]
 
-            if len(job_name_list) == len(skills_list) == len(job_url_list):
+            if len(job_name_list) == len(job_url_list):
                 if len(job_name_list) == 0:
                     print('Page ' + str(page) + ', has no data. - ' + str(worker))
                 else:
@@ -216,7 +220,10 @@ class Crawl(Protect_Measure):
                 print('The length of skills_list: ', len(skills_list))
                 print('The length of job_url_list: ', len(job_url_list))
                 print('Each of length of these list are different, data is missed.')
-                miss_list.append(int(page))
+                # miss_list.append(int(page))
+                lose_data_file, csv_lose_file = file_object.record_lose_data()
+                csv_lose_file.writerow(int(page))
+                lose_data_file.close()
                 print('The page that data is missed has been recorded. - ' + str(worker))
                 print('------------------------------------------------')
             return miss_list
@@ -309,6 +316,9 @@ if __name__ == '__main__':
     sql_db.create_table(conn_sql, job_sql)
     conn_sql.close()
 
+    '''
+    We want to get all data in the web, so we need to get all page of the web.
+    '''
     get_page_num = Automatic_Web(url=target_url, head_url=web_head_url)
     page_num = get_page_num.driver()
 
