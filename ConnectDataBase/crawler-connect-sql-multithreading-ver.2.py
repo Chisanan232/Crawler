@@ -203,18 +203,18 @@ class Crawl(Protect_Measure):
                     pass
                     # print('Page ' + str(page) + ', has no data. - ' + str(worker))
                 else:
-                    try:
-                        lock.acquire()
+                    lock.acquire()
 
+                    try:
                         # print('Thread be lock - ' + str(worker))
                         for index in range(0, len(job_name_list)):
                             data_list = [job_name_list[index], avg_price_list[index], skills_list[index], job_url_list[index]]
                             thread_sql.insert_data(thread_job_sql, data_list)
-
-                        lock.release()
                     except:
                         print('Index has been out of range. - ' + str(worker))
                         pass
+
+                    lock.release()
 
                     # print('Thread be release - ' + str(worker))
                     print('Page ' + str(page) + ', ' + str(len(job_name_list)) + ' data has been recorded success !!! - ' + str(worker))
