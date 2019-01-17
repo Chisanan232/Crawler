@@ -200,26 +200,30 @@ class Crawl(Protect_Measure):
 
             if len(job_name_list) == len(job_url_list):
                 if len(job_name_list) == 0:
-                    print('Page ' + str(page) + ', has no data. - ' + str(worker))
+                    pass
+                    # print('Page ' + str(page) + ', has no data. - ' + str(worker))
                 else:
+                    try:
+                        lock.acquire()
 
-                    lock.acquire()
+                        # print('Thread be lock - ' + str(worker))
+                        for index in range(0, len(job_name_list)):
+                            data_list = [job_name_list[index], avg_price_list[index], skills_list[index], job_url_list[index]]
+                            thread_sql.insert_data(thread_job_sql, data_list)
 
-                    print('Thread be lock - ' + str(worker))
-                    for index in range(0, len(job_name_list)):
-                        data_list = [job_name_list[index], avg_price_list[index], skills_list[index], job_url_list[index]]
-                        thread_sql.insert_data(thread_job_sql, data_list)
+                        lock.release()
+                    except:
+                        print('Index has been out of range. - ' + str(worker))
+                        pass
 
-                    lock.release()
-
-                    print('Thread be release - ' + str(worker))
+                    # print('Thread be release - ' + str(worker))
                     print('Page ' + str(page) + ', ' + str(len(job_name_list)) + ' data has been recorded success !!! - ' + str(worker))
             else:
                 print('------------------------------------------------')
-                print('The length of job_name_list: ', len(job_name_list))
-                print('The length of skills_list: ', len(skills_list))
-                print('The length of job_url_list: ', len(job_url_list))
-                print('Each of length of these list are different, data is missed.')
+                # print('The length of job_name_list: ', len(job_name_list))
+                # print('The length of skills_list: ', len(skills_list))
+                # print('The length of job_url_list: ', len(job_url_list))
+                # print('Each of length of these list are different, data is missed.')
                 # miss_list.append(int(page))
                 lose_data_file, csv_lose_file = file_object.record_lose_data()
                 csv_lose_file.writerow(int(page))
