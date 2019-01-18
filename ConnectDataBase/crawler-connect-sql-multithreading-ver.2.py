@@ -5,7 +5,6 @@ import threading
 import requests
 import sqlite3
 import random
-import queue
 import time
 import csv
 import os
@@ -239,15 +238,30 @@ class Crawl(Protect_Measure):
             skill_soup = BeautifulSoup(target_html.text, 'html.parser')
             skill_rows = skill_soup.select('a.PageProjectViewLogout-detail-tags-link--highlight')
             if skill_rows:
-                i = 1
-                all_skill = ''
-                for skill in skill_rows:
-                    all_skill = all_skill + str(skill.text) + '、'
-                    i += 1
-                new_all_skill = all_skill[:-1]
+                if skill_rows:
+                    i = 1
+                    all_skill = ''
+                    for skill in skill_rows:
+                        all_skill = all_skill + str(skill.text) + '、'
+                        i += 1
+                    new_all_skill = all_skill[:-1]
+                else:
+                    new_all_skill = ''
+                return new_all_skill
             else:
-                new_all_skill = ''
-            return new_all_skill
+                skill_rows_2 = skill_soup.select('ul.logoutHero-recommendedSkills > li')
+                if skill_rows_2:
+                    i = 1
+                    all_skill = ''
+                    for skill in skill_rows_2:
+                        all_skill = all_skill + str(skill.text) + '、'
+                        i += 1
+                    new_all_skill = all_skill[:-1]
+                else:
+                    new_all_skill = ''
+                return new_all_skill
+
+
 
 
     def get_time(self, test_url):
