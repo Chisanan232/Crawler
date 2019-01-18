@@ -1,13 +1,11 @@
 from selenium import webdriver
 from bs4 import BeautifulSoup
-import pandas as pd
 import threading
 import requests
 import sqlite3
 import random
 import time
 import csv
-import os
 
 
 
@@ -19,59 +17,33 @@ class Parameter:
 
 class Sql_DataBase:
     def connect_database(self):
-        connect_sql = sqlite3.connect('multiple_conn.sqlite')
+        connect_sql = sqlite3.connect('multiple_conn_ver_2.sqlite')
         job_content_sql = connect_sql.cursor()
         return connect_sql, job_content_sql
 
 
     def create_table(self, connect_sql, job_content_sql):
-        sql_create_cmd = 'CREATE TABLE IF NOT EXISTS job_web ("job_name" TEXT NOT NULL, "average_price" INTEGER, \
+        sql_create_cmd = 'CREATE TABLE IF NOT EXISTS job_opening ("job_name" TEXT NOT NULL, "average_price" INTEGER, \
                          "skills" TEXT, "job_link" varchar(255) PRIMARY KEY NOT NULL)'
         job_content_sql.execute(sql_create_cmd)
         connect_sql.commit()
-        print('Table in database job_web has been created success !')
+        print('Table in database job_opening has been created success !')
 
 
     def insert_data(self, job_content_sql, data_list):
-        sql_insert_cmd = 'INSERT INTO job_web ("job_name", "average_price", "skills", "job_link") VALUES (?, ?, ?, ?)'
+        sql_insert_cmd = 'INSERT INTO job_opening ("job_name", "average_price", "skills", "job_link") VALUES (?, ?, ?, ?)'
         job_content_sql.execute(sql_insert_cmd, data_list)
 
 
 class File:
 
     '''
-    Distribute all data into a mount of threads number and build the same quantity files where save the data we crawled
-    '''
-
-    def create_file(self, worker, target_file_dir):
-        fields = ("job_name", "average_price", "skills", "job_link")
-        if target_file_dir[-1] == '/':
-            data_file = target_file_dir + 'job-data-thread-' + worker[-3:] + '.csv'
-            file = open(data_file, '+a', encoding='utf-8-sig', newline='')
-            writer_file = csv.writer(file)
-            writer_file.writerow(fields)
-            print('Build file success !!! - ' + str(worker))
-        else:
-            data_file = target_file_dir + '/job-data-thread-' + worker[-3:] + '.csv'
-            file = open(data_file, '+a', encoding='utf-8-sig', newline='')
-            writer_file = csv.writer(file)
-            writer_file.writerow(fields)
-            print('Build file success !!! - ' + str(worker))
-        return file, writer_file
-
-
-    def data_merge(self, target_file_dir):
-        all_data = pd.concat([pd.DataFrame(pd.read_csv(os.path.join(target_file_dir, file))) for file in
-                              os.listdir(target_file_dir)], axis=0, ignore_index=True)
-        return all_data
-
-    '''
     Record the data be lose when program is crawling.
     '''
 
     def record_lose_data(self):
-        lose_data_path = ''
-        lose_data_file = open(lose_data_path, encoding='utf-8-sig', newline='')
+        lose_data_path = r'C:\Users\iAirJordan\Desktop\lose_data_page.csv'
+        lose_data_file = open(lose_data_path, 'a+', encoding='utf-8-sig', newline='')
         csv_lose_file = csv.writer(lose_data_file)
         return lose_data_file, csv_lose_file
 
@@ -170,10 +142,10 @@ class Crawl(Protect_Measure):
     def distribute_url_page(self, page_number, thread_number):
         divide_num = int(int(page_number) / int(thread_number))
         if int(page_number) % int(thread_number) == 0:
-            print('divide 0')
+            # print('divide 0')
             return divide_num
         else:
-            print('divide 1')
+            # print('divide 1')
             new_divide_num = divide_num + 1
             return new_divide_num
 
@@ -202,6 +174,12 @@ class Crawl(Protect_Measure):
                     pass
                     # print('Page ' + str(page) + ', has no data. - ' + str(worker))
                 else:
+
+                    '''
+                    Start to insert data to SQLite DataBase, so execute thread lock to lock the process to ensure here 
+                    only has one thread execute prevent for error about SSL happen with multithreading.
+                    '''
+
                     lock.acquire()
 
                     try:
@@ -214,6 +192,11 @@ class Crawl(Protect_Measure):
                         pass
 
                     lock.release()
+
+                    '''
+                    It has finished that insert data to DataBase. It is available to release lock to let one of other thread
+                    to coming this section to insert data.
+                    '''
 
                     # print('Thread be release - ' + str(worker))
                     print('Page ' + str(page) + ', ' + str(len(job_name_list)) + ' data has been recorded success !!! - ' + str(worker))
@@ -256,12 +239,10 @@ class Crawl(Protect_Measure):
                     for skill in skill_rows_2:
                         all_skill = all_skill + str(skill.text) + '、'
                         i += 1
-                    new_all_skill = all_skill[:-1]
+                    new_all_skill_2 = all_skill[:-1]
                 else:
-                    new_all_skill = ''
-                return new_all_skill
-
-
+                    new_all_skill_2 = ''
+                return new_all_skill_2
 
 
     def get_time(self, test_url):
@@ -271,7 +252,6 @@ class Crawl(Protect_Measure):
             data_rows = soup.select('a.JobSearchCard-primary-heading-link')
             job_name_list = [data_row.text.strip() for data_row in data_rows]
             return len(job_name_list)
-
 
 
 class Main_Work(threading.Thread, Parameter, Crawl):
@@ -356,44 +336,6 @@ if __name__ == '__main__':
     for k in range(thread_num):
         print('It join ...... - ' + str(k))
         thread_list[k].join()
-
-    '''After crawled, we will merge all data into a file, and then insert it into DB. In exactly, this step and lines 272 
-       step are synchronal, therefore we use the logic from lines 278 to lines 306 and with we define exception ourself 
-       to reach that we can be sure all data have been finish, then program will continue.'''
-    # crawler = Crawl()
-    # data_quantity = crawler.get_time(target_url)
-    # thread_page = int(page_num / thread_num) + 1
-    # all_thread_num = int(page_num / thread_page) + 1
-    # surplus_thread_num = all_thread_num - thread_num
-    # last_thread_page = page_num - (all_thread_num - 1) * thread_page
-    # while True:
-    #     try:
-    #         for file in os.listdir(save_file_dir)[:surplus_thread_num]:
-    #             if file == 'job-data-thread-' + str(('%003d' % (thread_num - 1)).zfill(3)) + '.csv':
-    #                 if os.path.getsize(os.path.join(save_file_dir, file)) / 1024 > 0.16 * float(int(data_quantity) *
-    #                                                                                             last_thread_page):
-    #                     print('All data has been recorded success ! Time to insert data to SQL DB ! - main_thread')
-    #                 else:
-    #                     print('Program will sleep for 300 seconds ...... zzzzzzz - main_thread')
-    #                     time.sleep(300)
-    #                     raise DataNotReadyError('Data is not ready ...... - main_thread')
-    #             else:
-    #                 if os.path.getsize(os.path.join(save_file_dir, file)) / 1024 > 0.16 * float(int(data_quantity) *
-    #                                                                                             (int(page_num / thread_num) + 1)):
-    #                     print('All data has been recorded success ! Time to insert data to SQL DB ! - main_thread')
-    #                 else:
-    #                     print('Program will sleep for 300 seconds ...... zzzzzzz - main_thread')
-    #                     time.sleep(300)
-    #                     raise DataNotReadyError('Data is not ready ...... - main_thread')
-    #     except BaseException as e:
-    #         print(e)
-    #         continue
-    #     break
-    # print('Start to insert data to SQL database. - main_thread')
-    # data = save_file.data_merge(save_file_dir)
-    # data_pd = pd.DataFrame(data)
-    # for index in range(data_pd.count()):
-    #     sql_db.insert_data(job_sql, data_pd.iloc[index])
 
     program_end = time.time()
     print('=====Finish all job !!!===== - main_thread')
