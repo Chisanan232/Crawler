@@ -273,6 +273,11 @@ class Main_Work(threading.Thread, Parameter, Crawl):
     def run(self):
         get_data_start = time.time()
 
+        '''
+        I think it's important here. We have to know if we want to crawl data and connect SQLite DataBase to let data insert
+        in DB, then we have to connect DB in one the same thread and do something we want to do. 
+        '''
+
         print('------Start connect with SQLite DataBase.------')
         thread_sql = Sql_DataBase()
         thread_conn_sql, thread_job_sql = thread_sql.connect_database()
@@ -334,7 +339,7 @@ if __name__ == '__main__':
         thread_list[k].start()
 
     for k in range(thread_num):
-        print('It join ...... - ' + str(k))
+        # print('It join ...... - ' + str(k))
         thread_list[k].join()
 
     program_end = time.time()
