@@ -17,12 +17,14 @@ class Parameter:
 
 class Sql_DataBase:
     def connect_database(self):
+        # You can set your SQLite DataBase name here. (ex: multiple_conn_ver_2.sqlite)
         connect_sql = sqlite3.connect('multiple_conn_ver_2.sqlite')
         job_content_sql = connect_sql.cursor()
         return connect_sql, job_content_sql
 
 
     def create_table(self, connect_sql, job_content_sql):
+        # You can set your table name in SQLite DataBase here. (ex: job_opening)
         sql_create_cmd = 'CREATE TABLE IF NOT EXISTS job_opening ("job_name" TEXT NOT NULL, "average_price" INTEGER, \
                          "skills" TEXT, "job_link" varchar(255) PRIMARY KEY NOT NULL)'
         job_content_sql.execute(sql_create_cmd)
@@ -122,6 +124,11 @@ class Automatic_Web(Parameter, Protect_Measure):
         browser = webdriver.Chrome(chrome_options=options)
         browser.get(self.url)
         browser.find_elements_by_css_selector('li.Pagination-item')[6].click()
+
+        '''
+        Set the 0.7 seconds here because we have to wait website to execute code I write and get the target number.
+        '''
+
         print('Program will stop 0.7 seconds.')
         time.sleep(0.7)
         last_page_url = browser.current_url
@@ -308,11 +315,11 @@ class Main_Work(threading.Thread, Parameter, Crawl):
 if __name__ == '__main__':
     program_start = time.time()
 
+    # Set thread number you want here.
     thread_num = 50
 
     target_url = 'https://www.freelancer.com/jobs/'
     web_head_url = 'https://www.freelancer.com'
-    # save_file_dir = 'C:/Users/iAirJordan/Desktop/jupyter-data/prevent-data-sqldb/'
 
     sql_db = Sql_DataBase()
     conn_sql, job_sql = sql_db.connect_database()
