@@ -1,3 +1,12 @@
+'''
+I write this program because I want to crawler and insert data to DataBase with multithreading. But there is a question:
+Currently, we know the method to realize the idea is to write with python package "threading", but now, I use package is
+"tomorrow", it doesn't have "lock" and "release" function to ensure your all threads can crawl data and CONNECT SQL DB
+WITHOUT ERROR. In other word, the package "tomorrow" does not have function to ensure in the same time segment we just
+only have one thread connect DB and do something like insert data into it. Now I just try to use my algorithm to realize
+crawl data and connect DB with multithreading.
+'''
+
 from selenium import webdriver
 from bs4 import BeautifulSoup
 from tomorrow import threads
@@ -38,7 +47,11 @@ class Sql_DataBase:
 
 
 class File:
-    '''Distribute all data into a mount of threads number and build the same quantity files where save the data we crawled'''
+
+    '''
+    Distribute all data into a mount of threads number and build the same quantity files where save the data we crawled
+    '''
+
     def create_file(self, worker, target_file_dir):
         fields = ["job_name", "average_price", "skills", "job_link"]
         if target_file_dir[-1] == '/':
@@ -63,7 +76,11 @@ class File:
 
 
 class DataNotReadyError(Exception):
-    '''Define the exception because after we crawled finish, we will merge all data we crawled and insert it into SQL DB'''
+
+    '''
+    Define the exception because after we crawled finish, we will merge all data we crawled and insert it into SQL DB
+    '''
+
     def __init__(self, ErrorInfro):
         super(DataNotReadyError, self).__init__()
         self.errorinfro = ErrorInfro
@@ -114,7 +131,11 @@ class Protect_Measure:
 
 
 class Automatic_Web(Parameter, Protect_Measure):
-    '''We want to get all data of web, so we have to know number of the last page'''
+
+    '''
+    We want to get all data of web, so we have to know number of the last page
+    '''
+
     def __init__(self, url, head_url):
         super(Automatic_Web, self).__init__(url=url, head_url=head_url)
 
@@ -137,7 +158,11 @@ class Automatic_Web(Parameter, Protect_Measure):
 
 
 class Crawl(Protect_Measure):
-    '''Distribute work (which pages are crawled) thread should be to do to every treads'''
+
+    '''
+    Distribute work (which pages are crawled) thread should be to do to every treads
+    '''
+
     def distribute_url_page(self, page_number, thread_number):
         divide_num = int(int(page_number) / int(thread_number))
         if int(page_number) % int(thread_number) == 0:
@@ -213,7 +238,11 @@ class Crawl(Protect_Measure):
 
 
 class Main_Work(Parameter, Crawl):
-    '''Main job what to do in every threads'''
+
+    '''
+    Main job what to do in every threads
+    '''
+
     def __init__(self, url, head_url, all_web_page, target_file_dir):
         super(Main_Work, self).__init__(url=url, head_url=head_url)
         self.all_web_page = all_web_page
@@ -271,9 +300,12 @@ if __name__ == '__main__':
     for j in workers_list:
         thread_job.main_job(j, thread_num)
 
-    '''After crawled, we will merge all data into a file, and then insert it into DB. In exactly, this step and lines 272 
-       step are synchronal, therefore we use the logic from lines 278 to lines 306 and with we define exception ourself 
-       to reach that we can be sure all data have been finish, then program will continue.'''
+    '''
+    After crawled, we will merge all data into a file, and then insert it into DB. In exactly, this step and lines 272 
+    step are synchronal, therefore we use the logic from lines 278 to lines 306 and with we define exception ourself to 
+    reach that we can be sure all data have been finish, then program will continue.
+    '''
+
     crawler = Crawl()
     data_quantity = crawler.get_time(target_url)
     thread_page = int(page_num / thread_num) + 1
