@@ -15,6 +15,7 @@ class Parameter:
 
 class Sql_DataBase:
     def create_database(self):
+        # You can set your SQLite DataBase name here. (ex: boss.sqlite)
         conn_sql = sqlite3.connect('boss.sqlite')
         job_sql = conn_sql.cursor()
         conn_sql.commit()
@@ -23,6 +24,7 @@ class Sql_DataBase:
 
 
     def create_table(self, job_sql, conn_sql):
+        # You can set your table name in SQLite DataBase here. (ex: job_web)
         sqlcmd = 'CREATE TABLE IF NOT EXISTS job_web ("job_name" TEXT NOT NULL, "average_price" TEXT, "skills" TEXT, "job_link" varchar(255))'
         job_sql.execute(sqlcmd)
         conn_sql.commit()
@@ -81,7 +83,11 @@ class Protect_Measure:
 
 
 class Automatic_Web(Parameter, Protect_Measure):
-    '''We want to get all data of web, so we have to know number of the last page'''
+
+    '''
+    We want to get all data of web, so we have to know number of the last page
+    '''
+
     def __init__(self, url, head_url):
         super(Automatic_Web, self).__init__(url=url, head_url=head_url)
 
@@ -92,6 +98,11 @@ class Automatic_Web(Parameter, Protect_Measure):
         browser = webdriver.Chrome(chrome_options=options)
         browser.get(self.url)
         browser.find_elements_by_css_selector('li.Pagination-item')[6].click()
+
+        '''
+        Set the 0.7 seconds here because we have to wait website to execute code I write and get the target number.
+        '''
+
         print('Program will stop 1 seconds.')
         time.sleep(1)
         last_page_url = browser.current_url
@@ -124,10 +135,10 @@ class Crawl(Protect_Measure):
                     sql_db.insert_data(conn_sql, job_sql, job_name_list[index], avg_price_list[index], skills_list[index], job_url_list[index])
             else:
                 print('------------------------------------------------')
-                print('The length of job_name_list: ', len(job_name_list))
-                print('The length of skills_list: ', len(skills_list))
-                print('The length of job_url_list: ', len(job_url_list))
-                print('Each of length of these list are different, data is missed.')
+                # print('The length of job_name_list: ', len(job_name_list))
+                # print('The length of skills_list: ', len(skills_list))
+                # print('The length of job_url_list: ', len(job_url_list))
+                # print('Each of length of these list are different, data is missed.')
                 miss_list.append(page)
                 print('The page that data is missed has been recorded.')
                 print('------------------------------------------------')
@@ -142,15 +153,28 @@ class Crawl(Protect_Measure):
             skill_soup = BeautifulSoup(target_html.text, 'html.parser')
             skill_rows = skill_soup.select('a.PageProjectViewLogout-detail-tags-link--highlight')
             if skill_rows:
-                i = 1
-                all_skill = ''
-                for skill in skill_rows:
-                    all_skill = all_skill + str(skill.text) + '、'
-                    i += 1
-                new_all_skill = all_skill[:-1]
+                if skill_rows:
+                    i = 1
+                    all_skill = ''
+                    for skill in skill_rows:
+                        all_skill = all_skill + str(skill.text) + '、'
+                        i += 1
+                    new_all_skill = all_skill[:-1]
+                else:
+                    new_all_skill = ''
+                return new_all_skill
             else:
-                new_all_skill = ''
-            return new_all_skill
+                skill_rows_2 = skill_soup.select('ul.logoutHero-recommendedSkills > li')
+                if skill_rows_2:
+                    i = 1
+                    all_skill = ''
+                    for skill in skill_rows_2:
+                        all_skill = all_skill + str(skill.text) + '、'
+                        i += 1
+                    new_all_skill_2 = all_skill[:-1]
+                else:
+                    new_all_skill_2 = ''
+                return new_all_skill_2
 
 
 class Main_Work(Parameter, Crawl):
