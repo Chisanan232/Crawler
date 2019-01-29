@@ -40,8 +40,8 @@ class Sql_DataBase:
 class File:
 
     '''
-    Record the data be lose when program is crawling.
-    '''
+        Record the data be lose when program is crawling.
+        '''
 
     def record_lose_data(self):
         lose_data_path = r'C:\Users\iAirJordan\Desktop\lose_data_page.csv'
@@ -53,8 +53,8 @@ class File:
 class DataNotReadyError(Exception):
 
     '''
-    Define the exception because after we crawled finish, we will merge all data we crawled and insert it into SQL DB
-    '''
+        Define the exception because after we crawled finish, we will merge all data we crawled and insert it into SQL DB
+        '''
 
     def __init__(self, ErrorInfro):
         super(DataNotReadyError, self).__init__()
@@ -111,8 +111,8 @@ class Protect_Measure:
 class Automatic_Web(Parameter, Protect_Measure):
 
     '''
-    We want to get all data of web, so we have to know number of the last page
-    '''
+        We want to get all data of web, so we have to know number of the last page
+        '''
 
     def __init__(self, url, head_url):
         super(Automatic_Web, self).__init__(url=url, head_url=head_url)
@@ -143,8 +143,8 @@ class Automatic_Web(Parameter, Protect_Measure):
 class Crawl(Protect_Measure):
 
     '''
-    Distribute work (which pages are crawled) thread should be to do to every treads
-    '''
+        Distribute work (which pages are crawled) thread should be to do to every treads
+        '''
 
     def distribute_url_page(self, page_number, thread_number):
         divide_num = int(int(page_number) / int(thread_number))
@@ -264,8 +264,8 @@ class Crawl(Protect_Measure):
 class Main_Work(threading.Thread, Parameter, Crawl):
 
     '''
-    Main job what to do in every threads
-    '''
+        Main job what to do in every threads
+        '''
 
     def __init__(self, lock, url, head_url, all_web_page, thread_num):
         threading.Thread.__init__(self)
