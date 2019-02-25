@@ -15,7 +15,7 @@ class File:
         img_path = img_file_dir + img_file_path
         while True:
             try:
-                of = open(img_path, 'wb+', encoding='utf-8-sig')
+                of = open(img_path, 'wb')
                 return of
             except:
                 folder = os.path.exists(img_file_dir)
@@ -101,27 +101,23 @@ class Main(Crawler):
         # print(soup)
         # print('==============================================')
         img_row = soup.select('img')
-        print(img_row)
+        # print(img_row)
         i = 1
         for img_ele in img_row:
-            print('test')
-            # if len(img_ele) == 0:
-            #     print('this is zero')
-            #     pass
-            # else:
-            print(img_ele)
-            # print('===========')
-            img_attr = img_ele.get('src')
-            print(img_attr)
-            print('----------')
+            # print(img_ele)
             img_src = img_ele.get('data-src')
-            print(img_src)
-            # file = file_build.open_file(i)
-            # file.write(img_src)
-            # file.close()
-            i += 1
-            print('The {} picture has downloaded successfully !!! '.format(i))
-            print('=====================')
+            # print(img_src)
+            if img_src is None:
+                pass
+            else:
+                img_html = self.send_request(img_src)
+                img_bin = img_html.content
+                file = file_build.open_file(i)
+                file.write(img_bin)
+                file.close()
+                print('The {} picture has downloaded successfully !!! '.format(i))
+                i += 1
+                print('=====================')
 
         print('===========Crawler Has Finish===========')
 
