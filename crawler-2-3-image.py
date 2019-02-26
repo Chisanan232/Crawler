@@ -126,17 +126,17 @@ class Main(Crawler):
 
         '''method 2'''
 
-        # q = self.parser_pyquery(self.url)
-        # # print(q)
-        # q_img = q('img')
-        # print(q_img)
-        # print(type(q_img))
-        # what = q_img
-        # print(what)
-        # # for i in q_img:
-        #     # print(i)
-        #     # q_src = i.attr('src')
-        #     # print(q_src)
+        q = self.parser_pyquery(self.url)
+        # print(q)
+        q_img = q('img')
+        print(q_img)
+        print(type(q_img))
+        what = q_img
+        print(what)
+        # for i in q_img:
+            # print(i)
+            # q_src = i.attr('src')
+            # print(q_src)
 
 
 if __name__ == '__main__':
