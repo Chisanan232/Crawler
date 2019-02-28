@@ -10,7 +10,7 @@ import os
 class File:
     def open_file(self, index):
         '''Save text file about the target url we want to crawl the img'''
-        img_file_dir = r'D:\DataSource\PycharmProjects\KobeFirstProject\Crawl-1-git-version\crawler_image'
+        img_file_dir = r'D:\DataSource\PycharmProjects\KobeFirstProject\Crawl-1-git-version\crawler_result_data\crawler_image'
         img_file_path = r'\michael_jordan_' + str(index) + '.png'
         img_path = img_file_dir + img_file_path
         while True:
@@ -72,9 +72,23 @@ class Crawler(Protect):
         return html
 
 
-    def parser(self, html):
+    def parser(self, html, file_build):
         soup = BeautifulSoup(html.text, 'html.parser')
-        return soup
+        img_row = soup.select('img')
+        i = 1
+        for img_ele in img_row:
+            img_src = img_ele.get('data-src')
+            if img_src is None:
+                pass
+            else:
+                img_html = self.send_request(img_src)
+                img_bin = img_html.content
+                file = file_build.open_file(i)
+                file.write(img_bin)
+                file.close()
+                print('The {} picture has downloaded successfully !!! '.format(i))
+                i += 1
+                print('========================')
 
 
     def parser_pyquery(self, url):
@@ -96,55 +110,26 @@ class Main(Crawler):
         '''method 1'''
 
         html = self.send_request(self.url)
-        soup = self.parser(html)
-        # print('========This is page ' + str(p) + ' ==========')
-        # print(soup)
-        # print('==============================================')
-        img_row = soup.select('img')
-        # print(img_row)
-        i = 1
-        for img_ele in img_row:
-            # print(img_ele)
-            img_src = img_ele.get('data-src')
-            # print(img_src)
-            if img_src is None:
-                pass
-            else:
-                img_html = self.send_request(img_src)
-                img_bin = img_html.content
-                file = file_build.open_file(i)
-                file.write(img_bin)
-                file.close()
-                print('The {} picture has downloaded successfully !!! '.format(i))
-                i += 1
-                print('=====================')
+        self.parser(html, file_build)
 
         print('===========Crawler Has Finish===========')
 
-        #     img_src = img_ele.get('src')
-        #     print(img_src)
-
         '''method 2'''
 
-        q = self.parser_pyquery(self.url)
-        # print(q)
-        q_img = q('img')
-        print(q_img)
-        print(type(q_img))
-        what = q_img
-        print(what)
-        # for i in q_img:
-            # print(i)
-            # q_src = i.attr('src')
-            # print(q_src)
+        # q = self.parser_pyquery(self.url)
+        # # print(q)
+        # q_img = q('img')
+        # print(q_img)
+        # print(type(q_img))
+        # what = q_img
+        # print(what)
+        # # for i in q_img:
+        #     # print(i)
+        #     # q_src = i.attr('src')
+        #     # print(q_src)
 
 
 if __name__ == '__main__':
-    '''some job'''
-    # target_url_head = 'https://www.gettyimages.com/photos/michael-jordan?family=editorial&mediatype=photography&page='
-    # target_url_tail = '&phrase=michael%20jordan&sort=mostpopular'
-    # target_url = [target_url_head, target_url_tail]
-    # target_url = 'https://kenlu.net/2019/02/kicks-on-nba-all-star-game/'
     target_url = 'https://www.google.com/search?q=michael+jordan&source=lnms&tbm=isch&sa=X&sqi=2&ved=0ahUKEwiTkP3_6dPgAhUEdt4KHWp0AmcQ_AUIDigB&biw=1536&bih=722'
 
     # total_page = 3
