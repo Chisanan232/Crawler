@@ -3,7 +3,25 @@ from pyquery import PyQuery as pq
 import requests
 import random
 import os
+import re
 
+
+
+class File:
+    def open_file(self, index):
+        video_file_dir = r'D:\DataSource\PycharmProjects\KobeFirstProject\Crawl-1-git-version\crawler_result_data\crawler_video'
+        video_file_path = r'\michael_jordan_' + str(index) + '.wmv'
+        video_file = video_file_dir + video_file_path
+        while True:
+            try:
+                of = open(video_file, 'wb')
+                return of
+            except:
+                folder = os.path.exists(video_file_dir)
+                if not folder:
+                    os.mkdir(video_file_dir)
+                else:
+                    pass
 
 
 class Protect:
@@ -47,16 +65,50 @@ class Protect:
         return proxy
 
 
-class Crawler:
-    def parser(self, url):
-        html = requests.get(url)
+class Crawler(Protect):
+    def send_request(self, url):
+        html = requests.get(url, headers=self.get_header())
         return html
 
 
+    def parser(self, html, file_build):
+        soup = BeautifulSoup(html.text, 'html.parser')
+        video_row = soup.select('a')
+        for video in video_row:
+            video_ele = video.get('href')
+            match_ele = re.search('watch.v=(.*)', video_ele).group(0)
+            if not match_ele:
+                pass
+            else:
+                print(match_ele)
+                video_url = 'https://youtube.com/' + match_ele
+                video_html = requests.get(video_url)
+                video_bin = video_html.content
+
+
+
     def parser_pyquery(self, url):
-        q = pq(url)
+        q = pq(url, headers=self.get_header())
         return q
+
+
+class Main(Crawler):
+    def __init__(self, url):
+        self.url = url
+
+
+    def main_job(self):
+        file_build = File()
+
+        html = self.send_request(self.url)
+        self.parser(html, file_build)
+
+        print('==========Crawler Has Finish============')
 
 
 if __name__ == '__main__':
     '''something you want to do'''
+    target_url = 'https://www.youtube.com/results?search_query=michael+jordan'
+
+    crawler_video = Main(target_url)
+    crawler_video.main_job()
