@@ -78,9 +78,6 @@ class Bs_Crawler:
                 Bar = row.select('.sep')[1]
                 Visibility = Bar.find_next_siblings('td')[0].text
 
-                Temp1 = "".join(Temp.split())
-                Visibility1 = "".join(Visibility.split())
-
                 Date = str(year) + m.zfill(2) + d.zfill(2)
 
                 nws = [Date, newTime, weather, Temp1, wind, Barometer, wind_dir, Humidity, Visibility1]
