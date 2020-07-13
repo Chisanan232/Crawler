@@ -29,7 +29,7 @@ Framework: Requests <br>
 
 
 ##### Go
-Version: 3.7 up <br>
+Version: 1.14.2 <br>
 Framework: Requests <br>
 
 
