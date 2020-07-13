@@ -10,13 +10,14 @@ The project target to record all knowledge about crawling. <br>
 <br>
 
 ### Skills
-===
+
+---
 #### Environment
 ##### For Developing
 OS: MacOS (Current Version: 10.14.5)
 
 ##### For Running
-OS: MacOS (Current Version: 10.14.5), Windows OS (Current Version: Win10)
+OS: MacOS (Current Version: 10.14.5), Windows OS (Current Used: Win10)
 
 ---
 #### Language
