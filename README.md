@@ -5,7 +5,8 @@ This project records about some crawler programs and how to use multiple threads
 <br>
 
 ### Motivation
-**Crawler** 
+**Crawler** is the first lesson of software development world for me and it's a good topic for learning Python. <br>
+The project target to record all knowledge about crawling. <br>
 <br>
 
 ### Skills
